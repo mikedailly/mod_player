@@ -134,7 +134,18 @@ NextNote:
 		call	SetUpSequence
 
 DoSamples:
-
+		; which buffer do we sample into?
+		ld		a,(ModFrame)
+		xor		1
+		ld		(ModFrame),a
+		jr		nz,@SetupBuffer2
+		ld		h,a					; a=0
+		ld		l,a
+		jr		@Skip
+@SetupBuffer2:
+		ld		hl,SamplesPerFrame
+@Skip:
+		; HL = buffer address
 
 
 		ret

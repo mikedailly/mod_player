@@ -226,9 +226,10 @@ ModPlay:
 		ld		a,(ModBaseBank)
 		NextReg	MOD_BANK,a					; set mod bank
 
-		ld		a,1
+		ld		a,0
 		ld		(ModPlaying),a				; mod is playing
 		ld		(ModDelayCurrent),a
+		ld		(ModFrame),a
 		ld		a,6
 		ld		(ModDelayMax),a				; reset the delay
 
