@@ -60,7 +60,6 @@ WaitVBlank:
 		or		l
 		jr		nz,@wait
 
-		call    ReadKeyboard
 		nextreg $4a,%11111111
     	ld      a,2
     	out     ($fe),a

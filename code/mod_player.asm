@@ -140,6 +140,7 @@ ModInit:
 	ld		h,a
 	ld		(ix+sample_offset),l
 	ld		(ix+(sample_offset+1)),h
+	ld		a,c
 	ld		(ix+sample_bank),c
 
 	ld		e,(ix+sample_len)				; get sample length
@@ -228,16 +229,18 @@ ModPlay:
 
 		ld		a,0
 		ld		(ModPlaying),a				; mod is playing
-		ld		(ModDelayCurrent),a
 		ld		(ModFrame),a
 		ld		a,6
 		ld		(ModDelayMax),a				; reset the delay
+		ld		a,1
+		ld		(ModDelayCurrent),a
 
 		; reset sequence to the start
 		xor		a
 		ld		(ModPatternIndex),a			; reset to start of pattern
-		;ld		hl,(ModSequanceOrder)
-		;ld		(ModSequanceOrder_Current),hl
+		ld		hl,ModPattern
+		add		hl,a
+		ld		(ModSequanceOrder_Current),hl
 	
 		; get next sequence
 		ld		a,(hl)

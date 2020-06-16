@@ -4,7 +4,7 @@ MOD_BANK		equ	$52				; which MMU bank to use (this one and the next)
 MOD_ADD			equ	$4000			; base address of this bank
 
 TVRate			equ	50
-SamplesPerFrame	equ	(312/2)					; 156 samples per frame (312 scanlines)
+SamplesPerFrame	equ	(312/4)					; 156 samples per frame (312 scanlines)
 PlaybackFreq	equ	SamplesPerFrame*TVRate	; freq (default 7800)
 
 
@@ -97,5 +97,10 @@ ModDelayMax					db	0			; the reset delay
 ModChanData					ds	note_size*8	; all the data from the last note
 
 ModFrame					db	0			; buffer index
+							align	256
 ModSamplePlayback			ds	SamplesPerFrame*2
+
+ModAccumulationBuffer		db	SamplesPerFrame*2		; WORD size buffer
+
+
 

@@ -104,6 +104,8 @@ ReadAllChannelNotes:
 		; copy sample base offset
 		ld		e,(iy+sample_offset)
 		ld		d,(iy+(sample_offset+1))
+		add		de,MOD_ADD
+
 		ld		(ix+note_sample_off),e
 		ld		(ix+note_sample_cur),e
 		ld		(ix+(note_sample_off+1)),d
@@ -146,8 +148,80 @@ DoSamples:
 		ld		hl,SamplesPerFrame
 @Skip:
 		; HL = buffer address
+		add		hl,ModSamplePlayback
+		push	hl
+
+		;
+		ld		de,ModAccumulationBuffer
+		ld		b,78*2
+		xor		a
+@Clear:
+		ld		(de),a
+		inc		e
+		djnz	@Clear
 
 
+
+
+
+		
+		ld		a,(ModNumChan)
+		ld		c,a
+		ld		ix,ModChanData
+
+@AllChannels:
+		ld		e,(ix+note_sample_cur)
+		ld		d,(ix+(note_sample_cur+1))	
+		ld		a,e
+		or		d
+		jp		z,@NoSample
+
+		ld		a,(ix+note_sample_curb)
+		NextReg	MOD_BANK,a
+		inc		a
+		NextReg	MOD_BANK+1,a
+	
+		ld		b,78
+		ld		hl,ModSamplePlayback
+@CopySample1:
+		ld		a,(de)	
+		add		a,(hl)	
+		ld		(hl),a
+		inc		l
+		ld		a,0
+		adc		a,(hl)
+		ld		(hl),a
+		inc		l
+		inc		de
+		djnz	@CopySample1
+		ld		(ix+note_sample_cur),e
+		ld		(ix+(note_sample_cur+1)),d
+
+		ld		de,note_size
+		add		ix,de
+		dec		c
+		jr		nz,@AllChannels
+		
+
+@NoSample:
+		ld		b,78
+		ld		hl,ModSamplePlayback
+		pop		de
+		push	de
+
+		ld		a,(hl)
+		inc		l
+		ld		c,(hl)
+		inc		l
+		srl		c			; / 4
+		rrca
+		srl		c
+		rrca
+		ld		(de),a
+		inc		e
+		
+		pop		de
+		call	PlaySample
 		ret
 
 
