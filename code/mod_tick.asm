@@ -174,17 +174,35 @@ DoSamples:
 		ld		d,(ix+(note_sample_cur+1))	
 		ld		a,e
 		or		d
-		jp		z,@NoSample
+		;jp		z,@NoSample
 
 		ld		a,(ix+note_sample_curb)
 		NextReg	MOD_BANK,a
 		inc		a
 		NextReg	MOD_BANK+1,a
 	
+		exx
 		ld		b,78
 		ld		hl,ModSamplePlayback
+		exx
+		ld		h,e
+		ld		l,0
+		ld		bc,$0233
+		exx		
 @CopySample1:
+		exx		
 		ld		a,(de)	
+		ex		af,	af'
+		ld		a,$00					; high part of sample delta
+		add		hl,bc
+		ld		e,h
+		adc		a,d
+		ld		d,a
+		ex		af,	af'
+		exx		
+		
+		; now accumulate sample into buffer
+		add		a,128					; unsign sample
 		add		a,(hl)	
 		ld		(hl),a
 		inc		l
@@ -192,10 +210,11 @@ DoSamples:
 		adc		a,(hl)
 		ld		(hl),a
 		inc		l
-		inc		de
 		djnz	@CopySample1
+		exx
 		ld		(ix+note_sample_cur),e
 		ld		(ix+(note_sample_cur+1)),d
+		exx
 
 		ld		de,note_size
 		add		ix,de
