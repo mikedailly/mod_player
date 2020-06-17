@@ -19,10 +19,14 @@ ModInit:
 	ld		iy,ModSamples			; sample structs
 @SetUpAllSamples:
 	; swap sample length from amiga format
-	ld		a,(ix+file_sample_len)		
-	ld		(iy+(sample_len+1)),a
-	ld		a,(ix+(file_sample_len+1))
-	ld		(iy+sample_len),a
+	ld		h,(ix+file_sample_len)			; sample size in WORDS (*2 for bytes)
+	ld		l,(ix+(file_sample_len+1))
+	add		hl,hl
+	ld		(iy+sample_len),l
+	ld		(iy+(sample_len+1)),h
+	ld		a,0
+	adc		a,0
+	ld		(iy+(sample_len+2)),l
 	
 	; fine tune
 	ld		a,(ix+file_sample_fine)
@@ -128,7 +132,7 @@ ModInit:
 	inc		ix
 	djnz	@AllChannels
 	
-;ModSamAdd:
+ModReadSamples:
 	; HL now points to SAMPLE data (offset), while C is the bank
 	ld		ix,ModSamples
 	ld		a,(ModNumInst)
@@ -143,7 +147,7 @@ ModInit:
 	ld		a,c
 	ld		(ix+sample_bank),c
 
-	ld		e,(ix+sample_len)				; get sample length
+	ld		e,(ix+sample_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
 	ld		d,(ix+(sample_len+1))
 	add		hl,de
 
@@ -158,6 +162,13 @@ ModInit:
 	add		ix,de
 	djnz	@AllChannels2
 	
+	ld		b,SamplesPerFrame*2
+	ld		hl,ModSamplePlayback
+@ClearSample:
+	xor		a
+	ld		(hl),a
+	djnz	@ClearSample
+
 	ret
 
 ; ********************************************************************************************
@@ -279,4 +290,6 @@ SetUpSequence:
 
 		include	"mod_tick.asm"
 		include	"mod_data.asm"
+NoteLookup:		
+		incbin	"note_table.dat"			; MOD->PAL->SampleRate conversion
 

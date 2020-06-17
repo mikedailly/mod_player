@@ -4,7 +4,7 @@ MOD_BANK		equ	$52				; which MMU bank to use (this one and the next)
 MOD_ADD			equ	$4000			; base address of this bank
 
 TVRate			equ	50
-SamplesPerFrame	equ	(312/4)					; 156 samples per frame (312 scanlines)
+SamplesPerFrame	equ	128				;(312/3)					; 156 samples per frame (312 scanlines)
 PlaybackFreq	equ	SamplesPerFrame*TVRate	; freq (default 7800)
 
 
@@ -24,7 +24,7 @@ file_sample_info_len	rb	0
 
 
 					rsreset
-sample_len			rw	1		; length in words (*2=bytes)
+sample_len			rb	3		; length in words (*2=bytes)
 sample_fine			rb	1		; sample fine tune 0-7, +8-$f = -8 to -1
 sample_vol			rb	1		; volume, range is $00 to $40
 sample_rep			rw	1		; repeat point
@@ -45,6 +45,7 @@ note_sample_repb	rb	1		; base bank of repeat for sample
 note_sample_cur		rw	1		; CURRENT offset address
 note_sample_curb	rb	1		; CURRENT bank address
 note_sample_delta	rw	1		; sample delta
+note_sample_length	rw	1		; Current length to still play
 note_size			rb	0		; size of note
 
 
@@ -98,8 +99,10 @@ ModChanData					ds	note_size*8	; all the data from the last note
 
 ModFrame					db	0			; buffer index
 							align	256
-ModSamplePlayback			ds	SamplesPerFrame*2
-
+ModSamplePlayback			ds	SamplesPerFrame
+							align	256
+ModSamplePlayback2			ds	SamplesPerFrame
+							align	256
 ModAccumulationBuffer		db	SamplesPerFrame*2		; WORD size buffer
 
 

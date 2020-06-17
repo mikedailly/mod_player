@@ -81,6 +81,7 @@ ReadAllChannelNotes:
 		swapnib
 		and		$f
 		or		e							; merge with sample high
+		dec		a							; -1 (values from 1 to 128)
 		ld		(ix+note_sample),a
 		ld		a,c
 		and		$f
@@ -91,6 +92,19 @@ ReadAllChannelNotes:
 		ld		(ix+note_effect),a			; effect high
 		inc		hl							; next note
 		
+
+		; get sample delta - via table  (PAL/(period*2))/(78*50)
+		ld		e,(ix+note_period)
+		ld		d,(ix+(note_period+1))
+		ex		de,hl
+		add		hl,hl
+		add		hl,NoteLookup
+		ld		a,(hl)
+		ld		(ix+note_sample_delta),a
+		inc		hl
+		ld		a,(hl)
+		ld		(ix+(note_sample_delta+1)),a
+		ex		de,hl
 		;
 		; Now we've read the note, find the base address and bank of the sample
 		;
@@ -112,12 +126,19 @@ ReadAllChannelNotes:
 		ld		(ix+(note_sample_cur+1)),d
 		ld		a,(iy+sample_bank)
 		ld		(ix+sample_bank),a
-		ld		(ix+note_sample_curb),a
+		ld		(ix+note_sample_curb),a 
+
+		ld		a,(iy+sample_len)
+		ld		(ix+note_sample_length),a
+		ld		a,(iy+(sample_len+1))
+		ld		(ix+(note_sample_length+1)),a
 
 NextNote:
 		ld		de,note_size
 		add		ix,de
-		djnz	ReadAllChannelNotes
+		dec		b
+		jp		nz,ReadAllChannelNotes
+		ld		(ModPatternAddress),hl
 		
 		; Next note in the sequence....
 		ld		a,(ModSequenceIndex)
@@ -135,25 +156,30 @@ NextNote:
 		ld		a,(de)
 		call	SetUpSequence
 
+
+
+
+
+;------------------------------------------------------------------
+; Process all samples
+;------------------------------------------------------------------
 DoSamples:
 		; which buffer do we sample into?
 		ld		a,(ModFrame)
 		xor		1
 		ld		(ModFrame),a
 		jr		nz,@SetupBuffer2
-		ld		h,a					; a=0
-		ld		l,a
+		ld		hl,ModSamplePlayback
 		jr		@Skip
 @SetupBuffer2:
-		ld		hl,SamplesPerFrame
+		ld		hl,ModSamplePlayback+256			   ; SamplesPerFrame
 @Skip:
 		; HL = buffer address
-		add		hl,ModSamplePlayback
 		push	hl
 
 		;
 		ld		de,ModAccumulationBuffer
-		ld		b,78*2
+		ld		b,SamplesPerFrame*2
 		xor		a
 @Clear:
 		ld		(de),a
@@ -164,36 +190,55 @@ DoSamples:
 
 
 
+
+
 		
 		ld		a,(ModNumChan)
 		ld		c,a
 		ld		ix,ModChanData
 
-@AllChannels:
+CopyAllChannels:
+		; get sample address, if 0... no sample playing
 		ld		e,(ix+note_sample_cur)
 		ld		d,(ix+(note_sample_cur+1))	
 		ld		a,e
 		or		d
-		;jp		z,@NoSample
+		jp		z,NoSampleToCopy
 
+		; bank sample in
 		ld		a,(ix+note_sample_curb)
 		NextReg	MOD_BANK,a
 		inc		a
 		NextReg	MOD_BANK+1,a
 	
+
+
+		;------------------------------------------------------------------
+		;	NON-Looping copy
+		;------------------------------------------------------------------
 		exx
-		ld		b,78
-		ld		hl,ModSamplePlayback
+		ld		b,SamplesPerFrame
+		ld		hl,ModAccumulationBuffer
+		ld		e,(ix+note_sample_length)
+		ld		d,(ix+(note_sample_length+1))
+SampCopy
 		exx
 		ld		h,e
 		ld		l,0
-		ld		bc,$0233
+		ld		c,(ix+note_sample_delta)
+		ld		b,(ix+(note_sample_delta+1))
+		push	bc
+		NEG_BC
+		ld		a,b
+		ld		(LengthDelta+2),a
+		pop	bc
+
 		exx		
-@CopySample1:
+CopySample1:
 		exx		
 		ld		a,(de)	
 		ex		af,	af'
-		ld		a,$00					; high part of sample delta
+		xor		a					; high part of sample delta
 		add		hl,bc
 		ld		e,h
 		adc		a,d
@@ -205,41 +250,72 @@ DoSamples:
 		add		a,128					; unsign sample
 		add		a,(hl)	
 		ld		(hl),a
-		inc		l
+		inc		hl
 		ld		a,0
 		adc		a,(hl)
 		ld		(hl),a
-		inc		l
-		djnz	@CopySample1
+		inc		hl
+
+		; dec sample length... stop copy on 0
+		;dec		de
+LengthDelta:
+		add		de,$ffff
+		ld		a,d
+		or		e
+		jr		z,EndOfSampleCopy		
+		djnz	CopySample1					; copy all of a frame
+
+
+		ld		(ix+note_sample_length),e
+		ld		(ix+(note_sample_length+1)),d
 		exx
 		ld		(ix+note_sample_cur),e
 		ld		(ix+(note_sample_cur+1)),d
 		exx
 
+NextChannel:
 		ld		de,note_size
 		add		ix,de
 		dec		c
-		jr		nz,@AllChannels
-		
+		jp		nz,CopyAllChannels
+		jp		SkipSampleEnd
+EndOfSampleCopy:	
+		xor		a
+		ld		(ix+note_sample_cur),a
+		ld		(ix+(note_sample_cur+1)),a
+		jp		NextChannel
 
-@NoSample:
-		ld		b,78
-		ld		hl,ModSamplePlayback
+
+
+
+
+;------------------------------------------------------------------
+;   Scale sample buffer down for "raw" buffer playback
+;------------------------------------------------------------------
+SkipSampleEnd:
+NoSampleToCopy:
+		ld		b,SamplesPerFrame
 		pop		de
 		push	de
+		ld		hl,ModAccumulationBuffer
 
+ScaleSample:
 		ld		a,(hl)
 		inc		l
 		ld		c,(hl)
 		inc		l
 		srl		c			; / 4
-		rrca
+		rra
 		srl		c
-		rrca
+		rra
 		ld		(de),a
 		inc		e
+		djnz	ScaleSample
 		
-		pop		de
+		pop		hl
+		ld		a,l
+		xor		256
+		ld		l,a
 		call	PlaySample
 		ret
 

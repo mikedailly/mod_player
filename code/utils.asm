@@ -936,7 +936,7 @@ SampleLength	db 76,00		; length
 
 		db $68			; R2-write B time byte, increment, to memory, bitmask
 		db $22			; R2-Cycle length port B + NEXT extension		
-SampleRate:	db 218		; set PreScaler to 78*50 = 3900Hz  = 875kHz/4 = 218
+SampleRate:	db 175		; set PreScaler to 78*50 = 3900Hz  = 875kHz/4 = 218
 
 		db $cd			; R4-Dest destination port
 		db $df,$ff		; $FFDF = SpecDrum
