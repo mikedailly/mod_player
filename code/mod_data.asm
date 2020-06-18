@@ -3,8 +3,9 @@
 MOD_BANK		equ	$52				; which MMU bank to use (this one and the next)
 MOD_ADD			equ	$4000			; base address of this bank
 
-TVRate			equ	50
-SamplesPerFrame	equ	128				;(312/3)					; 156 samples per frame (312 scanlines)
+DMABaseFreq		equ	875000					; DMA base freq
+TVRate			equ	50						; framerate
+SamplesPerFrame	equ	104						; 104 samples per frame
 PlaybackFreq	equ	SamplesPerFrame*TVRate	; freq (default 7800)
 
 
@@ -46,6 +47,7 @@ note_sample_cur		rw	1		; CURRENT offset address
 note_sample_curb	rb	1		; CURRENT bank address
 note_sample_delta	rw	1		; sample delta
 note_sample_length	rw	1		; Current length to still play
+note_length_delta	rw	1		; number of bytes copied each frame
 note_size			rb	0		; size of note
 
 

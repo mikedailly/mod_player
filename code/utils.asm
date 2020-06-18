@@ -921,22 +921,23 @@ PlaySample:
 ;===========================================================================
 ;
 ;===========================================================================
-SoundDMA	db $c3			; Reset Interrupt circuitry, Disable interrupt and BUS request logic, unforce internal ready condition, disable "MUXCE" and STOP auto repeat
+SoundDMA:
+		db $c3			; Reset Interrupt circuitry, Disable interrupt and BUS request logic, unforce internal ready condition, disable "MUXCE" and STOP auto repeat
 		db $c7			; Reset Port A Timing TO standard Z80 CPU timing
 		
 		db $ca			; unknown
 
 		db $7d			; R0-Transfer mode, A -> B, write adress + block length
-SampleAddress	db $00,$60		; src
-SampleLength	db 76,00		; length
-		
-		
+SampleAddress	db $00,$60				; src
+SampleLength	dw SamplesPerFrame		; length
+				
 		db $54			; R1-read A time byte, increment, to memory, bitmask
 		db $02			; R1-Cycle length port A
 
 		db $68			; R2-write B time byte, increment, to memory, bitmask
-		db $22			; R2-Cycle length port B + NEXT extension		
-SampleRate:	db 175		; set PreScaler to 78*50 = 3900Hz  = 875kHz/4 = 218
+		db $22			; R2-Cycle length port B + NEXT extension
+SampleRate:	
+		db (DMABaseFreq/(SamplesPerFrame*TVRate))		; set PreScaler 875000kHz/freq = ???
 
 		db $cd			; R4-Dest destination port
 		db $df,$ff		; $FFDF = SpecDrum

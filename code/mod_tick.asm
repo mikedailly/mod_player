@@ -2,6 +2,12 @@
 ; TickMod - process and actually play the current mod file.
 ; ********************************************************************************************
 ModTick:
+		ld		a,(ModFrame)
+		add		a,Hi(ModSamplePlayback)
+		ld		h,a
+		ld		l,Lo(ModSamplePlayback)
+		call	PlaySample
+
 		ld		a,(ModDelayCurrent)
 		dec		a
 		ld		(ModDelayCurrent),a
@@ -92,7 +98,7 @@ ReadAllChannelNotes:
 		ld		(ix+note_effect),a			; effect high
 		inc		hl							; next note
 		
-
+GetNote
 		; get sample delta - via table  (PAL/(period*2))/(78*50)
 		ld		e,(ix+note_period)
 		ld		d,(ix+(note_period+1))
@@ -133,6 +139,19 @@ ReadAllChannelNotes:
 		ld		a,(iy+(sample_len+1))
 		ld		(ix+(note_sample_length+1)),a
 
+		; work out how many bytes we skip in the sample each frame
+		push	hl
+		ld		l,(ix+note_sample_delta)
+		ld		h,(ix+(note_sample_delta+1))
+		ld		e,SamplesPerFrame
+		ld		d,0
+		push	bc
+		call	Mul_16x16
+		pop		bc
+		ld		(ix+note_length_delta),d
+		ld		(ix+(note_length_delta+1)),l
+		pop		hl
+
 NextNote:
 		ld		de,note_size
 		add		ix,de
@@ -164,38 +183,35 @@ NextNote:
 ; Process all samples
 ;------------------------------------------------------------------
 DoSamples:
-		; which buffer do we sample into?
+		; which buffer do we mix into the final samples into?
 		ld		a,(ModFrame)
 		xor		1
 		ld		(ModFrame),a
-		jr		nz,@SetupBuffer2
-		ld		hl,ModSamplePlayback
-		jr		@Skip
-@SetupBuffer2:
-		ld		hl,ModSamplePlayback+256			   ; SamplesPerFrame
-@Skip:
-		; HL = buffer address
+		add		a,Hi(ModSamplePlayback)
+		ld		h,a
+		ld		l,Lo(ModSamplePlayback)
 		push	hl
 
-		;
+
+		; Clear accumulation buffer
 		ld		de,ModAccumulationBuffer
-		ld		b,SamplesPerFrame*2
+		ld		b,SamplesPerFrame
 		xor		a
 @Clear:
 		ld		(de),a
-		inc		e
+		inc		de
+		ld		(de),a
+		inc		de
 		djnz	@Clear
 
 
 
 
-
-
-
-		
+		; Now loop over all samples and resample into accumulation buffer		
 		ld		a,(ModNumChan)
-		ld		c,a
+		ld		(ChannelCounter),a
 		ld		ix,ModChanData
+
 
 CopyAllChannels:
 		; get sample address, if 0... no sample playing
@@ -204,6 +220,7 @@ CopyAllChannels:
 		ld		a,e
 		or		d
 		jp		z,NoSampleToCopy
+		push	de
 
 		; bank sample in
 		ld		a,(ix+note_sample_curb)
@@ -217,22 +234,41 @@ CopyAllChannels:
 		;	NON-Looping copy
 		;------------------------------------------------------------------
 		exx
-		ld		b,SamplesPerFrame
-		ld		hl,ModAccumulationBuffer
-		ld		e,(ix+note_sample_length)
-		ld		d,(ix+(note_sample_length+1))
+WorkOutLength:
+		; work out number of bytes to copy
+		ld		l,(ix+note_sample_length)
+		ld		h,(ix+(note_sample_length+1))
+		ld		e,(ix+note_length_delta)
+		ld		d,(ix+(note_length_delta+1))
+		xor		a
+		sbc		hl,de
+		jr		nc,@fullcopy
+		NEG_HL
+		ld		a,SamplesPerFrame
+		sub		l
+		ld		(SampleCopySize),a
+		ld		b,a
+		xor		a			
+		ld		(ix+note_sample_length),a
+		ld		(ix+(note_sample_length+1)),a
+		jp		SampCopy
+@fullcopy:
+		ld		(ix+note_sample_length),l
+		ld		(ix+(note_sample_length+1)),h
+		ld		a,SamplesPerFrame
+		ld		(SampleCopySize),a
+		ld		b,a
+
+
+
 SampCopy
+		pop		de
+		ld		hl,ModAccumulationBuffer
 		exx
 		ld		h,e
 		ld		l,0
 		ld		c,(ix+note_sample_delta)
 		ld		b,(ix+(note_sample_delta+1))
-		push	bc
-		NEG_BC
-		ld		a,b
-		ld		(LengthDelta+2),a
-		pop	bc
-
 		exx		
 CopySample1:
 		exx		
@@ -257,43 +293,31 @@ CopySample1:
 		inc		hl
 
 		; dec sample length... stop copy on 0
-		;dec		de
-LengthDelta:
-		add		de,$ffff
-		ld		a,d
-		or		e
-		jr		z,EndOfSampleCopy		
 		djnz	CopySample1					; copy all of a frame
-
-
-		ld		(ix+note_sample_length),e
-		ld		(ix+(note_sample_length+1)),d
 		exx
+		ld		a,(SampleCopySize)
+		cp		SamplesPerFrame
+		jr		z,@NotSampleEnd
+		ld		de,0
+@NotSampleEnd:
 		ld		(ix+note_sample_cur),e
 		ld		(ix+(note_sample_cur+1)),d
 		exx
 
 NextChannel:
+NoSampleToCopy:
 		ld		de,note_size
 		add		ix,de
-		dec		c
+		ld		a,(ChannelCounter)
+		dec		a
+		ld		(ChannelCounter),a
 		jp		nz,CopyAllChannels
-		jp		SkipSampleEnd
-EndOfSampleCopy:	
-		xor		a
-		ld		(ix+note_sample_cur),a
-		ld		(ix+(note_sample_cur+1)),a
-		jp		NextChannel
-
-
-
 
 
 ;------------------------------------------------------------------
 ;   Scale sample buffer down for "raw" buffer playback
 ;------------------------------------------------------------------
 SkipSampleEnd:
-NoSampleToCopy:
 		ld		b,SamplesPerFrame
 		pop		de
 		push	de
@@ -313,11 +337,16 @@ ScaleSample:
 		djnz	ScaleSample
 		
 		pop		hl
-		ld		a,l
-		xor		256
-		ld		l,a
-		call	PlaySample
+
+		; which buffer do we mix into the final samples into?
+		;ld		a,(ModFrame)
+		;xor		1
+		;add		a,Hi(ModSamplePlayback)
+		;ld		h,a
+		;ld		l,Lo(ModSamplePlayback)
+		;call	PlaySample
 		ret
 
-
+SampleCopySize	db	0
+ChannelCounter	db	0
 
