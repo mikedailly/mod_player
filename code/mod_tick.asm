@@ -243,11 +243,26 @@ WorkOutLength:
 		xor		a
 		sbc		hl,de
 		jr		nc,@fullcopy
-		NEG_HL
+
+		; work out how many bytes we DO need to process...
+		ld		b,0
+		ld		e,(ix+(note_sample_delta+1))			; whole bytes only
+		ld		d,0
+@LoopMore
+		inc		b
+		xor		a
+		add		hl,de
+		jr		nc,@LoopMore
+
+		; due to just using the high byte, there might be some inaccuracies... do check after SUB
 		ld		a,SamplesPerFrame
-		sub		l
+		sub		b
+		jr		nc,@NotLooped
+		ld		a,1									; check for overflow
+@Notlooped:		
 		ld		(SampleCopySize),a
-		ld		b,a
+		ld		b,a									; b = number of bytes to copy
+
 		xor		a			
 		ld		(ix+note_sample_length),a
 		ld		(ix+(note_sample_length+1)),a
@@ -284,8 +299,11 @@ CopySample1:
 		
 		; now accumulate sample into buffer
 		add		a,128					; unsign sample
+		;srl		a
+		;srl		a
 		add		a,(hl)	
 		ld		(hl),a
+		;inc		l
 		inc		hl
 		ld		a,0
 		adc		a,(hl)
@@ -300,6 +318,11 @@ CopySample1:
 		jr		z,@NotSampleEnd
 		ld		de,0
 @NotSampleEnd:
+		ld		a,d
+		cp		$80
+		jr		c,@CarryOn
+		break
+@CarryOn
 		ld		(ix+note_sample_cur),e
 		ld		(ix+(note_sample_cur+1)),d
 		exx

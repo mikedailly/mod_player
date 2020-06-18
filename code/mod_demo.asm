@@ -54,7 +54,7 @@ WaitVBlank:
 
 @wait:
 		call	ReadRaster
-		ld		de,150
+		ld		de,70
 		sbc		hl,de
 		ld		a,h
 		or		l
