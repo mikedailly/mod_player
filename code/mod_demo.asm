@@ -9,6 +9,8 @@
                 include "includes.asm"
 
 ModFileBank		equ		16
+ModSampleBank	equ		32
+
 
                 seg     CODE_SEG, 4:$0000,$8000
                 seg     MOD_SEG,  ModFileBank:$0000,$0000

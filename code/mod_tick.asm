@@ -200,8 +200,6 @@ DoSamples:
 @Clear:
 		ld		(de),a
 		inc		de
-		ld		(de),a
-		inc		de
 		djnz	@Clear
 
 
@@ -280,51 +278,50 @@ SampCopy
 		pop		de
 		ld		hl,ModAccumulationBuffer
 		exx
-		ld		h,e
-		ld		l,0
+	
+		; B is free
+		ld		h,0								; high delta - always 0
+		ld		l,(ix+(note_sample_delta+1))
+		ex		de,hl
 		ld		c,(ix+note_sample_delta)
-		ld		b,(ix+(note_sample_delta+1))
+		xor		a								; clear fraction accum
+		ex		af,	af'
 		exx		
+
 CopySample1:
-		exx		
-		ld		a,(de)	
-		ex		af,	af'
-		xor		a					; high part of sample delta
-		add		hl,bc
-		ld		e,h
-		adc		a,d
-		ld		d,a
-		ex		af,	af'
-		exx		
+		; Resample sample into correct frequency AND output frequency.
+		; DE.C = sample delta.  HL.A = sample address and fraction
+		exx							; swap in source address and fractional deltas
+		ld		a,(hl)				; read sample
+		ex		af,	af'				; swap byte for delta fraction
+		add		a,c					; sets carry for high op
+		adc		hl,de				; add address to upper delta + carry
+		ex		af,	af'				; get byte back - and save fraction
+		exx							; get dest address
 		
 		; now accumulate sample into buffer
-		add		a,128					; unsign sample
-		;srl		a
-		;srl		a
+		add		a,128				; unsign sample
+		srl		a
+		srl		a
 		add		a,(hl)	
 		ld		(hl),a
-		;inc		l
-		inc		hl
-		ld		a,0
-		adc		a,(hl)
-		ld		(hl),a
-		inc		hl
+		inc		l
+		djnz	CopySample1			; Build up a frames worth
 
-		; dec sample length... stop copy on 0
-		djnz	CopySample1					; copy all of a frame
+
 		exx
 		ld		a,(SampleCopySize)
 		cp		SamplesPerFrame
 		jr		z,@NotSampleEnd
-		ld		de,0
+		ld		hl,0
 @NotSampleEnd:
-		ld		a,d
+		ld		a,h
 		cp		$80
 		jr		c,@CarryOn
 		break
 @CarryOn
-		ld		(ix+note_sample_cur),e
-		ld		(ix+(note_sample_cur+1)),d
+		ld		(ix+note_sample_cur),l
+		ld		(ix+(note_sample_cur+1)),h
 		exx
 
 NextChannel:
@@ -346,19 +343,41 @@ SkipSampleEnd:
 		push	de
 		ld		hl,ModAccumulationBuffer
 
+		;ld		a,(TuneBank)
+		;NextReg	MOD_BANK,a
+		;inc		a
+		;NextReg	MOD_BANK+1,a
+		;ld		de,(TuneAddress)
+		
+
 ScaleSample:
 		ld		a,(hl)
 		inc		l
-		ld		c,(hl)
-		inc		l
-		srl		c			; / 4
-		rra
-		srl		c
-		rra
 		ld		(de),a
-		inc		e
+		inc		de
+
 		djnz	ScaleSample
 		
+		; $1f
+		ld		a,d
+		sub		Hi(MOD_ADD)
+		swapnib
+		and		$f
+		srl		a
+		ld		b,a
+		ld		a,(TuneBank)
+		add		a,b
+		ld		(TuneBank),a
+		
+		ld		a,d
+		and		$1f
+		add		a,Hi(MOD_ADD)
+		ld		d,a
+		ld		(TuneAddress),de
+		
+
+
+
 		pop		hl
 
 		; which buffer do we mix into the final samples into?
@@ -372,4 +391,10 @@ ScaleSample:
 
 SampleCopySize	db	0
 ChannelCounter	db	0
+				ds	40
+TuneBank		db	ModSampleBank
+TuneAddress		dw	MOD_ADD
+
+
+
 
