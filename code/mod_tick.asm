@@ -55,11 +55,11 @@ ReadAllChannelNotes:
 		ld		e,a							; note high
 
 		inc		hl
-		or		(hl)						; note low
-		jr		nz,@NewNote
-		ld		a,3
-		add		hl,a
-		jp		NextNote
+		;or		(hl)						; note low
+		;jr		nz,@NewNote
+		;ld		a,3
+		;add		hl,a
+		;jp		NextNote
 		
 
 @NewNote:
@@ -102,6 +102,10 @@ GetNote
 		; get sample delta - via table  (PAL/(period*2))/(78*50)
 		ld		e,(ix+note_period)
 		ld		d,(ix+(note_period+1))
+		ld		a,e
+		or		d
+		jp		z,NextNote
+
 		ex		de,hl
 		add		hl,hl
 		add		hl,NoteLookup
