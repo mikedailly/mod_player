@@ -1,6 +1,6 @@
 # mod_player
 ZX Spectrum Next (z80N) Mod player
-Copyright Mike Dailly 2020 All rights reserved.
+Copyright 2020 Mike Dailly, All rights reserved.
 
 The source to this player may be used freely for both commercial and non-commercial reasons, without charge but copyright is maintained and credit must be given to anyone who has contributed (see below) in any project where it is used. No warranty is given to this project and you use it at your own risk.
 
@@ -23,7 +23,7 @@ Usage:
 	ld    a,BANK		; the core bank where the mod file lives
 	ld    b,1			; 1 to initialise the samples (do this once only)
 	call  ModInit		; load and init the mod
-	call	ModPlay		; start the mod file playing
+	call  ModPlay		; start the mod file playing
 
 
 	; inside an IRQ or mainloop if running 50hz

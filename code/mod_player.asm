@@ -71,7 +71,7 @@ ModInit:
 	inc		hl
 	;ld		(ModSequanceOrder),hl			; get the base of the sequence order
 	;ld		(ModSequanceOrder_current),hl	; and store current position
-	
+CopyPattern
 	; detect largest pattern number
 	xor		a
 	ld		b,128
@@ -164,7 +164,7 @@ AllChannels2:
 
 	ld		a,h
 	swapnib							; swap from $1f to $f1
-	and		$e						; now mask to keep $0e
+	and		$0e						; now mask to keep $0e
 	rrca							; /2 and get number of banks  (lower bit is 0)
 	add		a,c
 	ld		c,a
@@ -275,7 +275,7 @@ FindID:
 	inc		hl
 	inc		ix
 	djnz	@CheckLetters
-	ld		a,(ix+0)		; get number of channels
+	ld		a,(hl)		; get number of channels
 @ExitNoneFound:
 	pop		ix
 	pop		hl
@@ -348,7 +348,11 @@ SetUpSequence:
 
 
 		include	"mod_tick.asm"
+		include	"mod_misc.asm"
+		include	"mod_effect.asm"
 		include	"mod_data.asm"
 NoteLookup:		
 		incbin	"note_table.dat"			; MOD->PAL->SampleRate conversion
+
+
 

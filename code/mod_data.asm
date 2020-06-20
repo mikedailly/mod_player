@@ -76,6 +76,7 @@ ModIDs:
 ModInitSamples				db	0			; temp so we know to init the samples or not (unsign, shift etc)
 ModBaseBank					db	0			; base bank of mod file
 ModTuneBase					dw	0			; the tune base address
+ModDestbuffer				dw	0			; The playback buffer we're about to write to
 ModSongLength				db	0			; the length of the mod (in sequences)
 ModSongRestart				db	0			; restart point (in sequences)
 ModSequanceOrder			dw	0			; the sequence order

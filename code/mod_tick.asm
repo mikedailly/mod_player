@@ -30,15 +30,6 @@ ModTick:
 		NextReg	MOD_BANK+1,a
 
 
-;note_sample		rb	1		; the sample being played
-;note_period		rw	1		; 12 bit sample period (or effect paramater)
-;note_effect		rw	1		; 12 bit effect value
-;note_sample_off		rw	1		; base address of sample
-;note_sample_bank	rw	1		; base bank of sample
-;note_sample_rep		rw	1		; base address of repeat for sample
-;note_sample_bank	rw	1		; base bank of sample
-
-
 		ld		ix,ModChanData
 		ld		a,(ModNumChan)
 		ld		b,a
@@ -89,15 +80,22 @@ ReadAllChannelNotes:
 		or		e							; merge with sample high
 		dec		a							; -1 (values from 1 to 128)
 		ld		(ix+note_sample),a
+
 		ld		a,c
 		and		$f
 		ld		(ix+(note_effect+1)),a		; effect high
+		ld		d,a
 		
 		inc		hl
 		ld		a,(hl)
 		ld		(ix+note_effect),a			; effect high
-		inc		hl							; next note
-		
+		inc		hl							; next note	
+		ld		e,a
+		or		d
+		jr		z,GetNote
+
+		call	DoEffects
+
 GetNote
 		; get sample delta - via table  (PAL/(period*2))/(78*50)
 		ld		e,(ix+note_period)
@@ -196,7 +194,7 @@ DoSamples:
 		add		a,Hi(ModSamplePlayback)
 		ld		h,a
 		ld		l,Lo(ModSamplePlayback)
-		push	hl
+		ld		(ModDestbuffer),hl
 
 
 
@@ -358,15 +356,14 @@ NoSampleToCopy:
 ;------------------------------------------------------------------
 SkipSampleEnd:
 		ld		b,SamplesPerFrame
-		pop		de
-		push	de
+		ld		de,(ModDestbuffer)
 		ld		hl,ModAccumulationBuffer
 
-		ld		a,(TuneBank)
-		NextReg	MOD_BANK,a
-		inc		a
-		NextReg	MOD_BANK+1,a
-		ld		de,(TuneAddress)
+		;ld		a,(TuneBank)
+		;NextReg	MOD_BANK,a			; lets me record the sample to memory for saving out via debugger
+		;inc		a
+		;NextReg	MOD_BANK+1,a
+		;ld		de,(TuneAddress)
 		
 
 ScaleSample:
@@ -393,80 +390,8 @@ ScaleSample:
 		add		a,Hi(MOD_ADD)
 		ld		d,a
 		ld		(TuneAddress),de
-		
-
-
-
-		pop		hl
-
-		; which buffer do we mix into the final samples into?
-		;ld		a,(ModFrame)
-		;xor		1
-		;add		a,Hi(ModSamplePlayback)
-		;ld		h,a
-		;ld		l,Lo(ModSamplePlayback)
-		;call	PlaySample
 		ret
 
-
-
-;===========================================================================
-; hl = source
-; bc = length
-; set port to write to with NEXTREG_REGISTER_SELECT_PORT
-; prior to call
-;
-; Function:	Upload a set of sprites
-; In:		HL = Sample address
-; used		A
-;===========================================================================
-ModPlaySample:	
-		ld	(ModSampleAddress),hl
-
-		; Now set the transfer going...
-		ld hl,ModSoundDMA
-		ld b,$16
-		ld c,Z80_DMA_DATAGEAR_PORT
-		otir
-		ret
-
-
-
-
-;===========================================================================
-;
-;===========================================================================
-ModSoundDMA:
-		db $c3			; Reset Interrupt circuitry, Disable interrupt and BUS request logic, unforce internal ready condition, disable "MUXCE" and STOP auto repeat
-		db $c7			; Reset Port A Timing TO standard Z80 CPU timing
-		
-		db $ca			; unknown
-
-		db $7d			; R0-Transfer mode, A -> B, write adress + block length
-ModSampleAddress:	
-		db $00,$60				; src
-ModSampleLength:
-		dw SamplesPerFrame		; length
-				
-		db $54			; R1-read A time byte, increment, to memory, bitmask
-		db $02			; R1-Cycle length port A
-
-		db $68			; R2-write B time byte, increment, to memory, bitmask
-		db $22			; R2-Cycle length port B + NEXT extension
-ModSampleRate:
-		db (DMABaseFreq) / (((SamplesPerFrame+5)*TVRate))		; set PreScaler 875000kHz/freq = ???
-
-		db $cd			; R4-Dest destination port
-		;db $fe,$00		; $FFDF = SpecDrum
-		db $df,$ff		; $FFDF = SpecDrum
-
-		db $82			; R5-Restart on end of block, RDY active LOW
-		db $bb			; R6
-		db $08			; R6 Read mask enable (Port A address low)
-		
-		db $cf			; Load starting address for both potrs, clear byte counter
-		db $b3			; Force internal ready condition 
-		db $87			; enable DMA
 
 
 

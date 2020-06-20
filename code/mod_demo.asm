@@ -63,12 +63,10 @@ WaitVBlank:
 		or		l
 		jr		nz,@wait
 
-		nextreg $4a,%11111111
-    	ld      a,2
-    	out     ($fe),a
-		call    ReadKeyboard
+ 		call    ReadKeyboard
 
 
+;		nextreg $4a,%11111111
     	ld      a,1
     	out     ($fe),a
 		call	ModTick	
@@ -76,35 +74,24 @@ WaitVBlank:
     	ld      a,0
     	out     ($fe),a
 
-	
-		if 0
-		ld	a,(FrameCount)
-		ld	(LastFrame),a
-		ld	de,4*256+4
-		call	DrawNumber
-
-		ld	de,4*256+16
-		ld	a,(posX+1)
-		and	31
-		call	DrawHex8
-		ld	a,(posY+1)
-		and	31
-		call	DrawHex8
-		endif
 		jp      MainLoop
 
 
-        	include "mod_player.asm"
-        	include "utils.asm"
-        	include "maths.asm"
+        include "mod_player.asm"
+        include "utils.asm"
+        include "maths.asm"
 		include	"irq.asm"		; MUST start at $fd00
 
 		seg	MOD_SEG
-ModFile:	incbin	"axelf.mod"
+ModFile:
+;		incbin	"blood_money_title.mod"	
+		incbin	"axelf.mod"
 
 ; *****************************************************************************************************************************
 ; save
 ; *****************************************************************************************************************************
-               	savenex "mod_player.nex",StartAddress,StackStart
+		savenex "mod_player.nex",StartAddress,StackStart
+
+
 
 
