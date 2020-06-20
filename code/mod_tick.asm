@@ -8,6 +8,8 @@ ModTick:
 		ld		l,Lo(ModSamplePlayback)
 		call	ModPlaySample
 
+		call	SaveMMUs
+
 		ld		a,(ModDelayCurrent)
 		dec		a
 		ld		(ModDelayCurrent),a
@@ -136,6 +138,9 @@ GetNote
 		ld		(ix+note_sample_length),a
 		ld		a,(iy+(sample_len+1))
 		ld		(ix+(note_sample_length+1)),a
+		ld		a,(iy+sample_vol)
+		ld		(ix+note_volume),a
+		
 
 		; work out how many bytes we skip in the sample each frame
 		push	hl
@@ -196,22 +201,15 @@ DoSamples:
 		ld		l,Lo(ModSamplePlayback)
 		ld		(ModDestbuffer),hl
 
-
-
-    	ld      a,2
-    	out     ($fe),a
-
-		; Clear accumulation buffer
-		ld		de,ModAccumulationBuffer
+		
+		; Clear destination buffer, we need to do this because if samples are ending it'll leave data in the buffer
+		ld		de,(ModDestbuffer)
 		ld		b,SamplesPerFrame
 		xor		a
-@Clear:
-		ld		(de),a
+@Clear	ld		(de),a
 		inc		e
 		djnz	@Clear
 
-    	ld      a,1
-    	out     ($fe),a
 
 
 		; Now loop over all samples and resample into accumulation buffer		
@@ -227,20 +225,19 @@ CopyAllChannels:
 		ld		a,e
 		or		d
 		jp		z,NoSampleToCopy
-		push	de
 
 		; bank sample in
 		ld		a,(ix+note_sample_curb)
 		NextReg	MOD_BANK,a
 		inc		a
 		NextReg	MOD_BANK+1,a
+		exx							; DE now hold sample address (in alt set)
 	
 
 
 		;------------------------------------------------------------------
 		;	NON-Looping copy
 		;------------------------------------------------------------------
-		exx
 WorkOutLength:
 		; work out number of bytes to copy
 		ld		l,(ix+note_sample_length)
@@ -284,8 +281,19 @@ WorkOutLength:
 
 
 SampCopy
-		pop		de
-		ld		hl,ModAccumulationBuffer
+		ld		a,ModVolumeBank
+		NextReg	MOD_VOL_BANK,a					; bank over the ROM area
+		inc		a
+		NextReg	MOD_VOL_BANK+1,a
+		ld		a,(ix+note_volume)
+		add		a,MOD_VOL_ADD
+		ld		d,a								; d = volume table to use		
+
+
+
+
+		;ld		hl,ModAccumulationBuffer
+		ld		hl,(ModDestbuffer)
 		exx
 	
 		; B is free
@@ -297,7 +305,10 @@ SampCopy
 		ex		af,	af'
 		exx		
 
-CopySample1:
+
+
+		; This loop is used for all other channels, and mixes into the buffer
+CopyLoop:
 		; Resample sample into correct frequency AND output frequency.
 		; DE.C = sample delta.  HL.A = sample address and fraction
 		exx							; swap in source address and fractional deltas
@@ -306,13 +317,17 @@ CopySample1:
 		add		a,c					; sets carry for high op
 		adc		hl,de				; add address to upper delta + carry
 		ex		af,	af'				; get byte back - and save fraction
-		exx							; get dest address
-		
+		exx							; get dest address		
 		; now accumulate sample into buffer
-		add		a,(hl)	
+		ld		e,a					; get index into volume table
+		ld		a,(de)				; get converted volume
+		add		a,(hl)				; mix into buffer
 		ld		(hl),a
 		inc		l
-		djnz	CopySample1			; Build up a frames worth
+		djnz	CopyLoop			; Build up a frames worth
+SkipCopyLoop:
+
+
 
 
 		exx
@@ -355,15 +370,19 @@ NoSampleToCopy:
 ;   Scale sample buffer down for "raw" buffer playback
 ;------------------------------------------------------------------
 SkipSampleEnd:
-		ld		b,SamplesPerFrame
-		ld		de,(ModDestbuffer)
-		ld		hl,ModAccumulationBuffer
+		jp		RestoreMMUs
 
-		;ld		a,(TuneBank)
-		;NextReg	MOD_BANK,a			; lets me record the sample to memory for saving out via debugger
-		;inc		a
-		;NextReg	MOD_BANK+1,a
-		;ld		de,(TuneAddress)
+
+
+		
+		; record sample into memory
+		ld		b,SamplesPerFrame
+		ld		hl,(ModDestbuffer)
+		ld		a,(TuneBank)
+		NextReg	MOD_BANK,a			; lets me record the sample to memory for saving out via debugger
+		inc		a
+		NextReg	MOD_BANK+1,a
+		ld		de,(TuneAddress)
 		
 
 ScaleSample:
@@ -371,10 +390,9 @@ ScaleSample:
 		inc		l
 		ld		(de),a
 		inc		de
-
 		djnz	ScaleSample
+
 		
-		; $1f
 		ld		a,d
 		sub		Hi(MOD_ADD)
 		swapnib
@@ -390,7 +408,8 @@ ScaleSample:
 		add		a,Hi(MOD_ADD)
 		ld		d,a
 		ld		(TuneAddress),de
-		ret
+
+		jp		RestoreMMUs
 
 
 

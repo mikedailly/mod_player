@@ -8,12 +8,15 @@
 
                 include "includes.asm"
 
-ModFileBank		equ		16
+ModVolumeBank	equ		16
+ModFileBank		equ		18
 ModSampleBank	equ		32
 
 
                 seg     CODE_SEG, 4:$0000,$8000
                 seg     MOD_SEG,  ModFileBank:$0000,$0000
+                seg     MOD_VOLUME,  ModVolumeBank:$0000,$0000		; volume conversion goes here
+
 
                 seg	CODE_SEG
 
@@ -77,15 +80,19 @@ WaitVBlank:
 		jp      MainLoop
 
 
+
+
         include "mod_player.asm"
+		
+		seg	CODE_SEG
         include "utils.asm"
         include "maths.asm"
 		include	"irq.asm"		; MUST start at $fd00
 
 		seg	MOD_SEG
 ModFile:
-;		incbin	"blood_money_title.mod"	
-		incbin	"axelf.mod"
+		incbin	"blood_money_title.mod"	
+;		incbin	"axelf.mod"
 
 ; *****************************************************************************************************************************
 ; save

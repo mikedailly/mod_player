@@ -37,7 +37,7 @@ EffectJump:
 		dw	NoEffect				; 09 Set sample offset
 		dw	NoEffect				; 10 Volume Slide
 		dw	NoEffect				; 11 Position Jump
-		dw	NoEffect				; 12 Set volume
+		dw	SetVolume				; 12 Set volume
 		dw	NoEffect				; 13 Pattern break
 		dw	NoEffect				; 14 multi-effect
 		dw	SetModSpeed				; 15 Set Speed
@@ -45,6 +45,19 @@ EffectJump:
 Effect14Jump:
 		dw	0
 
+
+
+;------------------------------------------------------------------------------------------
+; Set channel volume - we can only handle 0-63
+;------------------------------------------------------------------------------------------
+SetVolume:
+		ld		a,e
+		cp		$3f
+		jr		c,@InRange
+		ld		a,$3f
+@InRange:
+		ld		(ix+note_volume),a
+		jp		NoEffect
 
 
 ;------------------------------------------------------------------------------------------

@@ -37,6 +37,10 @@ ModInit:
 
 	; volume adjust
 	ld		a,(ix+file_sample_vol)
+	cp		63
+	jr		c,@SkipReset
+	ld		a,63
+@SkipReset:
 	ld		(iy+sample_vol),a
 
 	; swap sample repeat point from amiga format
@@ -353,6 +357,10 @@ SetUpSequence:
 		include	"mod_data.asm"
 NoteLookup:		
 		incbin	"note_table.dat"			; MOD->PAL->SampleRate conversion
+
+		Seg		MOD_VOLUME	
+VolumeTable:
+		incbin	"mod_volume.dat"			; sample*volume conversion
 
 
 

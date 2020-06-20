@@ -32,8 +32,23 @@ namespace mod_tool
                     buffer.Write16((UInt16)d);
                 }
             }
-
             buffer.Save(@"C:\source\ZXSpectrum\mod_player\code\note_table.dat");
+
+
+            // create a one over table....
+            buffer = new FileBuffer(64*256);
+            for (int i = 0; i < 64; i++)
+            {
+                double volume = i;
+                for (int b = 0; b < 256; b++)
+                {
+                    double vol = volume / 63.0;
+                    double result = b * vol;
+
+                    buffer.Write8( (byte) result );
+                }
+            }
+            buffer.Save(@"C:\source\ZXSpectrum\mod_player\code\mod_volume.dat");
         }
     }
 }

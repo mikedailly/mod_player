@@ -2,6 +2,8 @@
 
 MOD_BANK		equ	$52				; which MMU bank to use (this one and the next)
 MOD_ADD			equ	$4000			; base address of this bank
+MOD_VOL_BANK	equ	$50				; which MMU bank to use for volumes
+MOD_VOL_ADD		equ	$4000			; base of volume banks
 
 DMABaseFreq		equ	875000					; DMA base freq
 TVRate			equ	50						; framerate
@@ -36,6 +38,7 @@ sample_info_len		rb	0
 
 
 					rsreset
+note_volume			rb	1		; current channel volume
 note_sample			rb	1		; the sample being played
 note_period			rw	1		; 12 bit sample period (or effect paramater)
 note_effect			rw	1		; 12 bit effect value
@@ -75,6 +78,7 @@ ModIDs:
 ; Mod file data
 ModInitSamples				db	0			; temp so we know to init the samples or not (unsign, shift etc)
 ModBaseBank					db	0			; base bank of mod file
+ModMMUStore					db	0,0,0,0		; backup the MMU regs
 ModTuneBase					dw	0			; the tune base address
 ModDestbuffer				dw	0			; The playback buffer we're about to write to
 ModSongLength				db	0			; the length of the mod (in sequences)

@@ -108,4 +108,56 @@ ModSampleRate:
 
 
 
+; ******************************************************************************
+; Function:	Save the MMUs we're going to overwrite
+; Out:		a = register to read
+; Out:		a = value in register
+; ******************************************************************************
+SaveMMUs:
+		ld		a,$50
+		call	ReadNextReg
+		ld		(ModMMUStore),a
+
+		ld		a,$51
+		call	ReadNextReg
+		ld		(ModMMUStore+1),a
+
+		ld		a,$52
+		call	ReadNextReg
+		ld		(ModMMUStore+2),a
+
+		ld		a,$53
+		call	ReadNextReg
+		ld		(ModMMUStore+3),a
+		ret
+
+
+; ******************************************************************************
+; Function:	restore all MMUs
+; ******************************************************************************
+RestoreMMUs:
+		ld		a,(ModMMUStore)
+		NextReg	$50,a
+		ld		a,(ModMMUStore+1)
+		NextReg	$51,a
+		ld		a,(ModMMUStore+2)
+		NextReg	$52,a
+		ld		a,(ModMMUStore+3)
+		NextReg	$53,a
+		ret
+		
+; ******************************************************************************
+; Function:	Read a next register
+; Out:		a = register to read
+; Out:		a = value in register
+; ******************************************************************************
+ReadNextReg:
+		; read MSB of raster first
+		ld	bc,$243b	; select NEXT register
+		out	(c),a
+		inc	b			; $253b to access (read or write) value
+		in	a,(c)
+		ret
+
+
 
