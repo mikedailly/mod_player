@@ -37,7 +37,8 @@ StartAddress:
 	    NextReg $4a,0           ; transparent fallback
 	    NextReg $4c,0           ; tile transparent colour
 
-		ld		a,ModFileBank
+		ld		a,ModFileBank	; where the mod file lives
+		ld		b,1				; we need to setup the samples first time in...
 		call	ModInit
 		call	ModPlay
 

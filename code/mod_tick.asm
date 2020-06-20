@@ -6,7 +6,7 @@ ModTick:
 		add		a,Hi(ModSamplePlayback)
 		ld		h,a
 		ld		l,Lo(ModSamplePlayback)
-		call	PlaySample
+		call	ModPlaySample
 
 		ld		a,(ModDelayCurrent)
 		dec		a
@@ -179,6 +179,12 @@ NextNote:
 
 
 
+
+
+
+
+
+
 ;------------------------------------------------------------------
 ; Process all samples
 ;------------------------------------------------------------------
@@ -193,21 +199,26 @@ DoSamples:
 		push	hl
 
 
+
+    	ld      a,2
+    	out     ($fe),a
+
 		; Clear accumulation buffer
 		ld		de,ModAccumulationBuffer
 		ld		b,SamplesPerFrame
 		xor		a
 @Clear:
 		ld		(de),a
-		inc		de
+		inc		e
 		djnz	@Clear
 
-
+    	ld      a,1
+    	out     ($fe),a
 
 
 		; Now loop over all samples and resample into accumulation buffer		
 		ld		a,(ModNumChan)
-		ld		(ChannelCounter),a
+		ld		(ModChannelCounter),a
 		ld		ix,ModChanData
 
 
@@ -242,23 +253,23 @@ WorkOutLength:
 		sbc		hl,de
 		jr		nc,@fullcopy
 
-		; work out how many bytes we DO need to process...
+		; if we get here we don't have enough bytes to fill a frame.
+		; So work out how many bytes we DO need to process... (add delta back onto negative length value until >0)
 		ld		b,0
-		ld		e,(ix+(note_sample_delta+1))			; whole bytes only
-		ld		d,0
+		ld		e,(ix+(note_sample_delta+1))			
+		ld		c,(ix+(note_sample_delta))
+		xor		a
+		ld		d,a
 @LoopMore
 		inc		b
-		xor		a
-		add		hl,de
+		add		a,c
+		adc		hl,de
 		jr		nc,@LoopMore
 
-		; due to just using the high byte, there might be some inaccuracies... do check after SUB
+		; Now we know how many samples we went beyond the end, subtract that off....
 		ld		a,SamplesPerFrame
-		sub		b
-		jr		nc,@NotLooped
-		ld		a,1									; check for overflow
-@Notlooped:		
-		ld		(SampleCopySize),a
+		sub		b	
+		ld		(ModSampleCopySize),a
 		ld		b,a									; b = number of bytes to copy
 
 		xor		a			
@@ -269,7 +280,7 @@ WorkOutLength:
 		ld		(ix+note_sample_length),l
 		ld		(ix+(note_sample_length+1)),h
 		ld		a,SamplesPerFrame
-		ld		(SampleCopySize),a
+		ld		(ModSampleCopySize),a
 		ld		b,a
 
 
@@ -300,9 +311,6 @@ CopySample1:
 		exx							; get dest address
 		
 		; now accumulate sample into buffer
-		add		a,128				; unsign sample
-		srl		a
-		srl		a
 		add		a,(hl)	
 		ld		(hl),a
 		inc		l
@@ -310,16 +318,27 @@ CopySample1:
 
 
 		exx
-		ld		a,(SampleCopySize)
-		cp		SamplesPerFrame
+		ld		a,(ModSampleCopySize)	; is the copy size the same as samples per frame?
+		cp		SamplesPerFrame		; if not, we didn't copy a whole frame, so sample has ended
 		jr		z,@NotSampleEnd
-		ld		hl,0
+		ld		hl,0				; check for repeating samples here.....
+		jp		@NoBankSwap
 @NotSampleEnd:
+		; check to see if we've crossed a bank
 		ld		a,h
-		cp		$80
-		jr		c,@CarryOn
-		break
-@CarryOn
+		sub		Hi(MOD_ADD)
+		and		$e0
+		jr		z,@NoBankSwap
+
+		ld		a,h							; reset bank offset
+		and		$1f
+		add		a,Hi(MOD_ADD)
+		ld		h,a
+		ld		a,(ix+note_sample_curb)		; inc bank
+		inc		a
+		ld		(ix+note_sample_curb),a
+
+@NoBankSwap:
 		ld		(ix+note_sample_cur),l
 		ld		(ix+(note_sample_cur+1)),h
 		exx
@@ -328,9 +347,9 @@ NextChannel:
 NoSampleToCopy:
 		ld		de,note_size
 		add		ix,de
-		ld		a,(ChannelCounter)
+		ld		a,(ModChannelCounter)
 		dec		a
-		ld		(ChannelCounter),a
+		ld		(ModChannelCounter),a
 		jp		nz,CopyAllChannels
 
 
@@ -343,11 +362,11 @@ SkipSampleEnd:
 		push	de
 		ld		hl,ModAccumulationBuffer
 
-		;ld		a,(TuneBank)
-		;NextReg	MOD_BANK,a
-		;inc		a
-		;NextReg	MOD_BANK+1,a
-		;ld		de,(TuneAddress)
+		ld		a,(TuneBank)
+		NextReg	MOD_BANK,a
+		inc		a
+		NextReg	MOD_BANK+1,a
+		ld		de,(TuneAddress)
 		
 
 ScaleSample:
@@ -389,11 +408,66 @@ ScaleSample:
 		;call	PlaySample
 		ret
 
-SampleCopySize	db	0
-ChannelCounter	db	0
-				ds	40
-TuneBank		db	ModSampleBank
-TuneAddress		dw	MOD_ADD
+
+
+;===========================================================================
+; hl = source
+; bc = length
+; set port to write to with NEXTREG_REGISTER_SELECT_PORT
+; prior to call
+;
+; Function:	Upload a set of sprites
+; In:		HL = Sample address
+; used		A
+;===========================================================================
+ModPlaySample:	
+		ld	(ModSampleAddress),hl
+
+		; Now set the transfer going...
+		ld hl,ModSoundDMA
+		ld b,$16
+		ld c,Z80_DMA_DATAGEAR_PORT
+		otir
+		ret
+
+
+
+
+;===========================================================================
+;
+;===========================================================================
+ModSoundDMA:
+		db $c3			; Reset Interrupt circuitry, Disable interrupt and BUS request logic, unforce internal ready condition, disable "MUXCE" and STOP auto repeat
+		db $c7			; Reset Port A Timing TO standard Z80 CPU timing
+		
+		db $ca			; unknown
+
+		db $7d			; R0-Transfer mode, A -> B, write adress + block length
+ModSampleAddress:	
+		db $00,$60				; src
+ModSampleLength:
+		dw SamplesPerFrame		; length
+				
+		db $54			; R1-read A time byte, increment, to memory, bitmask
+		db $02			; R1-Cycle length port A
+
+		db $68			; R2-write B time byte, increment, to memory, bitmask
+		db $22			; R2-Cycle length port B + NEXT extension
+ModSampleRate:
+		db (DMABaseFreq) / (((SamplesPerFrame+5)*TVRate))		; set PreScaler 875000kHz/freq = ???
+
+		db $cd			; R4-Dest destination port
+		;db $fe,$00		; $FFDF = SpecDrum
+		db $df,$ff		; $FFDF = SpecDrum
+
+		db $82			; R5-Restart on end of block, RDY active LOW
+		db $bb			; R6
+		db $08			; R6 Read mask enable (Port A address low)
+		
+		db $cf			; Load starting address for both potrs, clear byte counter
+		db $b3			; Force internal ready condition 
+		db $87			; enable DMA
+
 
 
 

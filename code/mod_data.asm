@@ -5,8 +5,8 @@ MOD_ADD			equ	$4000			; base address of this bank
 
 DMABaseFreq		equ	875000					; DMA base freq
 TVRate			equ	50						; framerate
-SamplesPerFrame	equ	104						; 104 samples per frame
-PlaybackFreq	equ	SamplesPerFrame*TVRate	; freq (default 7800)
+SamplesPerFrame	equ	128						; 104 samples per frame
+PlaybackFreq	equ	SamplesPerFrame*TVRate	; freq
 
 
 ; mod file addresses
@@ -73,12 +73,13 @@ ModIDs:
 
 
 ; Mod file data
-ModBaseBank:				db	0			; base bank of mod file
-ModTuneBase:				dw	0			; the tune base address
-ModSongLength:				db	0			; the length of the mod (in sequences)
-ModSongRestart:				db	0			; restart point (in sequences)
-ModSequanceOrder:			dw	0			; the sequence order
-ModSequanceOrder_current:	dw	0			; current pointer to the sequence order
+ModInitSamples				db	0			; temp so we know to init the samples or not (unsign, shift etc)
+ModBaseBank					db	0			; base bank of mod file
+ModTuneBase					dw	0			; the tune base address
+ModSongLength				db	0			; the length of the mod (in sequences)
+ModSongRestart				db	0			; restart point (in sequences)
+ModSequanceOrder			dw	0			; the sequence order
+ModSequanceOrder_current	dw	0			; current pointer to the sequence order
 ModNumInst					db	0			; number of instruments (15 or 31)
 ModNumChan					db	0			; number of channels 1-8
 ModHighestPattern			db	0			; largest pattern number
@@ -89,6 +90,8 @@ ModSamples					ds	31*sample_info_len		; Sample structs + address of all sampls (
 ModSequenceData				ds	128*3					; start address of all sequences (n channels * 64 entries)
 
 ModPlaying					db	0			; is the mod playing?
+ModSampleCopySize			db	0			; number of bytes being copied in "this" sample
+ModChannelCounter			db	0			; channel number being processed
 
 ModPatternIndex				db	0			; the current pattern we're playing from
 ModPatternAddress			dw	0			; the offset of the current pattern
@@ -100,12 +103,26 @@ ModDelayMax					db	0			; the reset delay
 ModChanData					ds	note_size*8	; all the data from the last note
 
 ModFrame					db	0			; buffer index
+
+; debug (allows wrting the whole tune to a single sample for saving via debugger)
+TuneBank					db	ModSampleBank
+TuneAddress					dw	MOD_ADD
+
+
 							align	256
 ModSamplePlayback			ds	SamplesPerFrame
 							align	256
 ModSamplePlayback2			ds	SamplesPerFrame
 							align	256
-ModAccumulationBuffer		db	SamplesPerFrame*2		; WORD size buffer
+ModAccumulationBuffer		db	SamplesPerFrame		; WORD size buffer
+
+
+
+
+
+
+
+
 
 
 

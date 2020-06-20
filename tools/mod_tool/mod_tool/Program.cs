@@ -9,7 +9,7 @@ namespace mod_tool
     class Program
     {
         const double PAL = 7093789.2;
-        const double FREQ = 104.0 * 50.0;
+        const double FREQ = 128.0 * 50.0;
         public static FileBuffer buffer;
         static void Main(string[] args)
         {

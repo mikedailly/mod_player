@@ -4,10 +4,13 @@
 
 ; ********************************************************************************************
 ;	A  = root bank of MOD file (tune always starts at 0)
+;   B  = InitSamples (0 = no)
 ; ********************************************************************************************
 ModInit:
 	ld		(ModBaseBank),a
 	NextReg	MOD_BANK,a				; bank in mod file
+	ld		a,b
+	ld		(ModInitSamples),a
 
 	; pre-process the 31 samples.
 	ld		ix,MOD_ID						; get number of instruments
@@ -107,8 +110,10 @@ ModInit:
 	ld		(ModSequenceSize),de
 
 
-
+	; ----------------------------------------------------------------------------------------
 	; work out start bank+offset of each sequence start address	
+	; ----------------------------------------------------------------------------------------
+CalcSeqStartAdd:
 	ld		ix,ModSequenceData
 	ld		a,(ModBaseBank)
 	ld		c,a						; c = bank, hl = offset
@@ -132,13 +137,19 @@ ModInit:
 	inc		ix
 	djnz	@AllChannels
 	
+
+
+	; ----------------------------------------------------------------------------------------
+	; Now work out the start and bank of all SAMPLES
+	; also convert all samples to unsigned (and pre-scale)
+	; ----------------------------------------------------------------------------------------
 ModReadSamples:
 	; HL now points to SAMPLE data (offset), while C is the bank
 	ld		ix,ModSamples
 	ld		a,(ModNumInst)
 	ld		b,a
 
-@AllChannels2:
+AllChannels2:
 	ld		a,h
 	and		$1f
 	ld		h,a
@@ -158,10 +169,58 @@ ModReadSamples:
 	add		a,c
 	ld		c,a
 
+	ld		a,(ModInitSamples)
+	and		a
+	jr		z,DontInitSamples
+
+	; Now convert the sample into unsigned and pre-scale it
+	exx
+	ld		l,(ix+sample_offset)
+	ld		h,(ix+(sample_offset+1))
+	add		hl,MOD_ADD
+	ld		a,(ix+sample_bank)
+	NextReg	MOD_BANK,a
+	ex		af,af'
+	ld		c,(ix+sample_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
+	ld		b,(ix+(sample_len+1))
+
+@DoAllSample:
+	ld		a,(hl)
+	add		$80
+	srl		a
+	srl		a
+	ld		(hl),a
+	inc		hl
+
+	ld		a,h
+	cp		Hi(MOD_ADD+$2000)
+	jr		nz,@NotNextBank
+	;		swap bank
+	add		hl,-$2000	
+	ex		af,af'
+	inc		a
+	NextReg	MOD_BANK,a
+	ex		af,af'
+	
+@NotNextBank:
+	add		bc,-1
+	ld		a,b
+	or		c
+	jr		nz,@DoAllSample
+	exx
+
+
+
+
+DontInitSamples:
 	ld		de,sample_info_len			; move to next sample
 	add		ix,de
-	djnz	@AllChannels2
+	djnz	AllChannels2
 	
+
+	; ----------------------------------------------------------------------------------------
+	; clear playback buffer
+	; ----------------------------------------------------------------------------------------
 	ld		b,SamplesPerFrame*2
 	ld		hl,ModSamplePlayback
 @ClearSample:
