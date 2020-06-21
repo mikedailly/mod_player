@@ -40,12 +40,20 @@ namespace mod_tool
             for (int i = 0; i < 64; i++)
             {
                 double volume = i;
-                for (int b = 0; b < 256; b++)
+                int index = i << 8;
+                for (int b = -128; b < 128; b++)
                 {
                     double vol = volume / 63.0;
                     double result = b * vol;
+                    byte v;
+                    int offset = 0;
+                    unchecked
+                    {
+                        v = ((byte)result);
+                        offset = (byte)b;
+                    }
 
-                    buffer.Write8( (byte) result );
+                    buffer.Write8(index+offset, (byte) v );
                 }
             }
             buffer.Save(@"C:\source\ZXSpectrum\mod_player\code\mod_volume.dat");

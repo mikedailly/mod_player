@@ -10,7 +10,7 @@
 
 ModVolumeBank	equ		16
 ModFileBank		equ		18
-ModSampleBank	equ		32
+ModSampleBank	equ		50
 
 
                 seg     CODE_SEG, 4:$0000,$8000
@@ -71,7 +71,7 @@ WaitVBlank:
 
 ;		nextreg $4a,%11111111
     	ld      a,1
-    	out     ($fe),a
+    	out     ($fe),a 
 		call	ModTick	
 		nextreg $4a,0
     	ld      a,0
@@ -91,8 +91,10 @@ WaitVBlank:
 
 		seg	MOD_SEG
 ModFile:
-		incbin	"blood_money_title.mod"	
-;		incbin	"axelf.mod"
+;		incbin	"abandon_2_0.mod"
+;		incbin	"test2.mod"
+;		incbin	"blood_money_title.mod"	
+		incbin	"axelf.mod"
 
 ; *****************************************************************************************************************************
 ; save

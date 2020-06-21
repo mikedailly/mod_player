@@ -50,10 +50,10 @@ ModInit:
 	ld		(iy+sample_rep),a
 
 	; swap sample repeat length  from amiga format
-	ld		a,(ix+file_sample_rep_len)		
-	ld		(iy+(sample_rep_len+1)),a
-	ld		a,(ix+(file_sample_rep_len+1))
-	ld		(iy+sample_rep_len),a
+	ld		h,(ix+file_sample_rep_len)		
+	ld		l,(ix+(file_sample_rep_len+1))
+	ld		(iy+sample_rep_len),l
+	ld		(iy+(sample_rep_len+1)),h
 
 	ld		de,file_sample_info_len			; move to next sample
 	add		ix,de
@@ -187,12 +187,16 @@ AllChannels2:
 	ex		af,af'
 	ld		c,(ix+sample_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
 	ld		b,(ix+(sample_len+1))
-
+	ld		a,c
+	or		b
+	jr		z,@EmptySample
 @DoAllSample:
 	ld		a,(hl)
-	add		$80
-	srl		a
-	srl		a
+	;add		$80
+	sra		a
+	sra		a
+	;srl		a
+	;srl		a
 	ld		(hl),a
 	inc		hl
 
@@ -211,8 +215,8 @@ AllChannels2:
 	ld		a,b
 	or		c
 	jr		nz,@DoAllSample
+@EmptySample
 	exx
-
 
 
 

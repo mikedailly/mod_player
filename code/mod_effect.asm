@@ -26,9 +26,9 @@ NoEffect:
 
 EffectJump:
 		dw	NoEffect				; 00 Arpeggio
-		dw	NoEffect				; 01 Slide up
-		dw	NoEffect				; 02 Slide down
-		dw	NoEffect				; 03 Slide to note
+		dw	PitchBendUp				; 01 Pitch bend slide note up (actually a subtract)
+		dw	PitchBendDOwn			; 02 Pitch bend slide note down (actually an add)
+		dw	NoEffect				; 03 Pitch bend slide to specific note
 		dw	NoEffect				; 04 Vibrato
 		dw	NoEffect				; 05 Continue Slide to note
 		dw	NoEffect				; 06 Contiune Vibrato
@@ -46,15 +46,35 @@ Effect14Jump:
 		dw	0
 
 
+;------------------------------------------------------------------------------------------
+; Setup a positive Pitch bend delta (up)
+;------------------------------------------------------------------------------------------
+PitchBendUp:
+		ld		(ix+note_pitch_bend),e
+		xor		a
+		ld		(ix+(note_pitch_bend+1)),e
+		jp		NoEffect
+
+;------------------------------------------------------------------------------------------
+; Setup a negative Pitch bend delta  (down)
+;------------------------------------------------------------------------------------------
+PitchBendDown:
+		ld		d,0
+		NEG_DE
+		ld		(ix+note_pitch_bend),e
+		xor		a
+		ld		(ix+(note_pitch_bend+1)),e
+		jp		NoEffect
+
 
 ;------------------------------------------------------------------------------------------
 ; Set channel volume - we can only handle 0-63
 ;------------------------------------------------------------------------------------------
 SetVolume:
 		ld		a,e
-		cp		$3f
+		cp		$40
 		jr		c,@InRange
-		ld		a,$3f
+		ld		a,$40
 @InRange:
 		ld		(ix+note_volume),a
 		jp		NoEffect
@@ -65,7 +85,11 @@ SetVolume:
 ;------------------------------------------------------------------------------------------
 SetModSpeed:
 		ld		a,e
-		and		$1f	
+		cp		$1f
+		jr		c,@Nomral
+		jp		NoEffect
+
+@Nomral:
 		ld		(ModDelayCurrent),a
 		ld		(ModDelayMax),a
 		jp		NoEffect

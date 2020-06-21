@@ -16,6 +16,7 @@ ModTick:
 		and		a
 		jp		nz,DoSamples
 
+
 		; delay has run out, so setup next note
 		ld		a,(ModDelayMax)
 		ld		(ModDelayCurrent),a
@@ -37,6 +38,16 @@ ModTick:
 		ld		b,a
 
 ReadAllChannelNotes:
+		push	bc
+
+		; first clear channel effect stuff
+		xor		a
+		ld		(ix+note_pitch_bend),a		; clear pitch bending
+		ld		(ix+(note_pitch_bend+1)),a
+		ld		a,$40
+		ld		(ix+note_volume),a
+
+
 		;
 		; read the 4 byte note
 		;
@@ -48,19 +59,11 @@ ReadAllChannelNotes:
 		; zzzzzzzzzzzz (12 bits) is the effect for this channel/division
 		;
 
-		; if note is 0, then leave current note in place
 		ld		a,(hl)						; get note high + sample
 		ld		c,a							; keep original
 		and		$f
 		ld		e,a							; note high
-
 		inc		hl
-		;or		(hl)						; note low
-		;jr		nz,@NewNote
-		;ld		a,3
-		;add		hl,a
-		;jp		NextNote
-		
 
 @NewNote:
 		; HL points to period high
@@ -99,74 +102,53 @@ ReadAllChannelNotes:
 		call	DoEffects
 
 GetNote
-		; get sample delta - via table  (PAL/(period*2))/(78*50)
+		; if note is 0, then leave current note in place
 		ld		e,(ix+note_period)
 		ld		d,(ix+(note_period+1))
 		ld		a,e
 		or		d
 		jp		z,NextNote
 
-		ex		de,hl
-		add		hl,hl
-		add		hl,NoteLookup
-		ld		a,(hl)
-		ld		(ix+note_sample_delta),a
-		inc		hl
-		ld		a,(hl)
-		ld		(ix+(note_sample_delta+1)),a
-		ex		de,hl
-		;
-		; Now we've read the note, find the base address and bank of the sample
-		;
-		ld		e,(ix+note_sample)
-		ld		d,sample_info_len
-		mul
-		add		de,ModSamples
-		push	de
-		pop		iy
+		xor		a
+		call	SetupNote
 
-		; copy sample base offset
-		ld		e,(iy+sample_offset)
-		ld		d,(iy+(sample_offset+1))
-		add		de,MOD_ADD
-
-		ld		(ix+note_sample_off),e
-		ld		(ix+note_sample_cur),e
-		ld		(ix+(note_sample_off+1)),d
-		ld		(ix+(note_sample_cur+1)),d
-		ld		a,(iy+sample_bank)
-		ld		(ix+sample_bank),a
-		ld		(ix+note_sample_curb),a 
-
-		ld		a,(iy+sample_len)
-		ld		(ix+note_sample_length),a
-		ld		a,(iy+(sample_len+1))
-		ld		(ix+(note_sample_length+1)),a
-		ld		a,(iy+sample_vol)
-		ld		(ix+note_volume),a
-		
-
-		; work out how many bytes we skip in the sample each frame
-		push	hl
-		ld		l,(ix+note_sample_delta)
-		ld		h,(ix+(note_sample_delta+1))
-		ld		e,SamplesPerFrame
-		ld		d,0
-		push	bc
-		call	Mul_16x16
-		pop		bc
-		ld		(ix+note_length_delta),d
-		ld		(ix+(note_length_delta+1)),l
-		pop		hl
 
 NextNote:
+
+
+DoEffectProcessing
+			; first check pitch bending
+			ld		e,(ix+note_pitch_bend)		
+			ld		d,(ix+(note_pitch_bend+1))	
+			ld		a,e
+			or		d
+			jp		z,NoPitchBending
+
+		
+			ld		l,(ix+note_period)		
+			ld		h,(ix+(note_period+1))	
+			xor		a
+			sbc		hl,de
+			ld		(ix+note_period),l
+			ld		(ix+(note_period+1)),h
+			ex		de,hl
+			ld		a,1
+			call	SetupNote
+NoPitchBending:
+
 		ld		de,note_size
 		add		ix,de
+		pop		bc
 		dec		b
 		jp		nz,ReadAllChannelNotes
 		ld		(ModPatternAddress),hl
 		
-		; Next note in the sequence....
+
+
+
+		; --------------------------------------------------------------------------------------------------------------------
+		; Next note in the sequence....  or move to next sequence
+		; --------------------------------------------------------------------------------------------------------------------
 		ld		a,(ModSequenceIndex)
 		inc		a
 		ld		(ModSequenceIndex),a
@@ -181,10 +163,6 @@ NextNote:
 		add		de,a
 		ld		a,(de)
 		call	SetUpSequence
-
-
-
-
 
 
 
@@ -209,10 +187,12 @@ DoSamples:
 		; Clear destination buffer, we need to do this because if samples are ending it'll leave data in the buffer
 		ld		de,(ModDestbuffer)
 		ld		b,SamplesPerFrame
-		xor		a
+		ld		a,128
 @Clear	ld		(de),a
 		inc		e
 		djnz	@Clear
+
+
 
 
 
@@ -244,11 +224,14 @@ CopyAllChannels:
 		;------------------------------------------------------------------
 WorkOutLength:
 		; work out number of bytes to copy
+		ld		a,(ix+note_sample_lengthF)				; current sample position (16.8)
 		ld		l,(ix+note_sample_length)
 		ld		h,(ix+(note_sample_length+1))
+
+		ld		c,(ix+note_length_deltaF)				; frame length delta  (16.8)
 		ld		e,(ix+note_length_delta)
 		ld		d,(ix+(note_length_delta+1))
-		xor		a
+		sub		c
 		sbc		hl,de
 		jr		nc,@fullcopy
 
@@ -257,8 +240,7 @@ WorkOutLength:
 		ld		b,0
 		ld		e,(ix+(note_sample_delta+1))			
 		ld		c,(ix+(note_sample_delta))
-		xor		a
-		ld		d,a
+		ld		d,0
 @LoopMore
 		inc		b
 		add		a,c
@@ -272,10 +254,12 @@ WorkOutLength:
 		ld		b,a									; b = number of bytes to copy
 
 		xor		a			
+		ld		(ix+note_sample_lengthF),a
 		ld		(ix+note_sample_length),a
 		ld		(ix+(note_sample_length+1)),a
 		jp		SampCopy
 @fullcopy:
+		ld		(ix+note_sample_lengthF),a
 		ld		(ix+note_sample_length),l
 		ld		(ix+(note_sample_length+1)),h
 		ld		a,SamplesPerFrame
@@ -290,6 +274,10 @@ SampCopy
 		inc		a
 		NextReg	MOD_VOL_BANK+1,a
 		ld		a,(ix+note_volume)
+		cp		$3f
+		jr		c,@Skip
+		ld		a,$3f
+@Skip:
 		add		a,MOD_VOL_ADD
 		ld		d,a								; d = volume table to use		
 
@@ -299,13 +287,13 @@ SampCopy
 		;ld		hl,ModAccumulationBuffer
 		ld		hl,(ModDestbuffer)
 		exx
-	
+
 		; B is free
 		ld		h,0								; high delta - always 0
 		ld		l,(ix+(note_sample_delta+1))
 		ex		de,hl
 		ld		c,(ix+note_sample_delta)
-		xor		a								; clear fraction accum
+		xor		a								; clear fractional accumulator
 		ex		af,	af'
 		exx		
 
@@ -326,6 +314,7 @@ CopyLoop:
 		ld		e,a					; get index into volume table
 		ld		a,(de)				; get converted volume
 		add		a,(hl)				; mix into buffer
+@less2:
 		ld		(hl),a
 		inc		l
 		djnz	CopyLoop			; Build up a frames worth
@@ -379,7 +368,7 @@ SkipSampleEnd:
 
 
 		
-		; record sample into memory
+		; DEBUG - record sample into memory
 		ld		b,SamplesPerFrame
 		ld		hl,(ModDestbuffer)
 		ld		a,(TuneBank)
@@ -417,6 +406,81 @@ ScaleSample:
 
 
 
+; ***********************************************************************************************
+; Sets up a channel using the current note/period
+; In:	DE = note
+;		A  = 0 to setup sample, 1 to leave current sample position (pitch bending etc)
+;		IX = note struct pointer
+; ***********************************************************************************************
+SetupNote:
+		ex		af,af'					
 
+		; get sample delta - via table  (PAL/(period*2))/(78*50)
+		ex		de,hl
+		add		hl,hl
+		add		hl,NoteLookup
+		ld		a,(hl)
+		ld		(ix+note_sample_delta),a
+		inc		hl
+		ld		a,(hl)
+		ld		(ix+(note_sample_delta+1)),a
+		ex		de,hl
 
+		; Do we want to skip the sample setup? 
+		ex		af,af'
+		and		a
+		jr		nz,@SkipSampleSetup
+		;
+		; Now we've read the note, find the base address and bank of the sample
+		;
+		ld		e,(ix+note_sample)
+		ld		d,sample_info_len
+		mul
+		add		de,ModSamples
+		push	de
+		pop		iy
+
+		; copy sample base offset
+		ld		e,(iy+sample_offset)
+		ld		d,(iy+(sample_offset+1))
+		add		de,MOD_ADD
+
+		ld		(ix+note_sample_off),e
+		ld		(ix+note_sample_cur),e
+		ld		(ix+(note_sample_off+1)),d
+		ld		(ix+(note_sample_cur+1)),d
+		ld		a,(iy+sample_bank)
+		ld		(ix+sample_bank),a
+		ld		(ix+note_sample_curb),a 
+
+		xor		a
+		ld		(ix+note_sample_lengthF),a
+		ld		e,(iy+sample_len)
+		ld		d,(iy+(sample_len+1))
+		ld		(ix+note_sample_length),e
+		ld		(ix+(note_sample_length+1)),d
+		ld		e,(iy+sample_vol)
+		ld		d,(ix+note_volume)
+		mul
+		ld		b,6
+		BSRA	DE,B						; DE>>6
+		ld		(ix+note_volume),e
+		
+@SkipSampleSetup
+		; work out how many bytes we skip in the sample each frame
+		push	hl
+		ld		l,(ix+note_sample_delta)
+		ld		h,(ix+(note_sample_delta+1))
+		ld		e,SamplesPerFrame
+		ld		d,0
+		push	bc
+		call	Mul_16x16
+		pop		bc
+		ld		(ix+note_length_deltaF),e
+		ld		(ix+note_length_delta),d
+		ld		(ix+(note_length_delta+1)),l
+		pop		hl
+		ret
+
+	
 

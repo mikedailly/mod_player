@@ -3,7 +3,7 @@
 MOD_BANK		equ	$52				; which MMU bank to use (this one and the next)
 MOD_ADD			equ	$4000			; base address of this bank
 MOD_VOL_BANK	equ	$50				; which MMU bank to use for volumes
-MOD_VOL_ADD		equ	$4000			; base of volume banks
+MOD_VOL_ADD		equ	$0000			; base of volume banks
 
 DMABaseFreq		equ	875000					; DMA base freq
 TVRate			equ	50						; framerate
@@ -39,8 +39,11 @@ sample_info_len		rb	0
 
 					rsreset
 note_volume			rb	1		; current channel volume
+note_volume_effect	rb	1		; when setting volume, we need to be able to override the sample one
 note_sample			rb	1		; the sample being played
 note_period			rw	1		; 12 bit sample period (or effect paramater)
+note_pitch_bend		rw	1		; the pitch bend delta (signed 16bit)
+note_last_period	rw	1		; Last note period (incase we need to restore it)
 note_effect			rw	1		; 12 bit effect value
 note_sample_off		rw	1		; base address of sample
 note_sample_bank	rw	1		; base bank of sample
@@ -50,7 +53,9 @@ note_sample_cur		rw	1		; CURRENT offset address
 note_sample_curb	rb	1		; CURRENT bank address
 note_sample_delta	rw	1		; sample delta
 note_sample_length	rw	1		; Current length to still play
+note_sample_lengthF	rb	1		; Current length to still play fraction
 note_length_delta	rw	1		; number of bytes copied each frame
+note_length_deltaF	rb	1		; number of bytes copied each frame - fraction
 note_size			rb	0		; size of note
 
 
@@ -104,6 +109,7 @@ ModPatternBank				db	0			; the bank of the current pattern
 ModSequenceIndex			db	0			; the current note index inside a sequence (0 to 63)
 ModDelayCurrent				db	0			; the current delay
 ModDelayMax					db	0			; the reset delay
+ModTemp						db	0			; tmep usage
 
 ModChanData					ds	note_size*8	; all the data from the last note
 
