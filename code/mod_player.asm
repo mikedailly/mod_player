@@ -192,9 +192,9 @@ AllChannels2:
 	jr		z,@EmptySample
 @DoAllSample:
 	ld		a,(hl)
+	sra		a
+	sra		a
 	;add		$80
-	sra		a
-	sra		a
 	;srl		a
 	;srl		a
 	ld		(hl),a

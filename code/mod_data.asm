@@ -8,7 +8,7 @@ MOD_VOL_ADD		equ	$0000			; base of volume banks
 
 DMABaseFreq		equ	875000					; DMA base freq
 TVRate			equ	50						; framerate
-SamplesPerFrame	equ	128						; 104 samples per frame
+SamplesPerFrame	equ	255						; 104 samples per frame
 PlaybackFreq	equ	SamplesPerFrame*TVRate	; freq
 
 

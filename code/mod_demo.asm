@@ -33,7 +33,7 @@ StartAddress:
 
 	    NextReg 128,0                   ; Make sure expansion bus is off.....
 	    NextReg $07,3                   ; Set to 28Mhz
-	    ;NextReg $05,1			; 50Hz mode  (bit 1 needs to be read from OS)
+	    NextReg $05,1			; 50Hz mode  (bit 1 needs to be read from OS)
 	    ;NextReg $05,4			; 60Hz mode
 	    NextReg	$08,%01001010   ; $50			; disable ram contention, enable specdrum, turbosound
 
@@ -60,7 +60,7 @@ WaitVBlank:
 
 @wait:
 		call	ReadRaster
-		ld		de,70
+		ld		de,30
 		sbc		hl,de
 		ld		a,h
 		or		l

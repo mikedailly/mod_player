@@ -44,8 +44,6 @@ ReadAllChannelNotes:
 		xor		a
 		ld		(ix+note_pitch_bend),a		; clear pitch bending
 		ld		(ix+(note_pitch_bend+1)),a
-		;ld		a,$40
-		;ld		(ix+note_volume),a
 
 
 		;
@@ -189,7 +187,7 @@ DoSamples:
 		ld		b,SamplesPerFrame
 		ld		a,128
 @Clear	ld		(de),a
-		inc		e
+		inc		de
 		djnz	@Clear
 
 
@@ -298,8 +296,9 @@ SampCopy
 		exx		
 
 
-
+		; -----------------------------------------------------------------------------------------------
 		; This loop is used for all other channels, and mixes into the buffer
+		; -----------------------------------------------------------------------------------------------
 CopyLoop:
 		; Resample sample into correct frequency AND output frequency.
 		; DE.C = sample delta.  HL.A = sample address and fraction
@@ -315,10 +314,11 @@ CopyLoop:
 		ld		a,(de)				; get converted volume
 		add		a,(hl)				; mix into buffer
 		ld		(hl),a
-		inc		l
+		inc		hl
 		djnz	CopyLoop			; Build up a frames worth
-
-
+		; -----------------------------------------------------------------------------------------------
+		; End copy loop
+		; -----------------------------------------------------------------------------------------------
 
 
 		exx
@@ -361,6 +361,16 @@ NoSampleToCopy:
 ;   Scale sample buffer down for "raw" buffer playback
 ;------------------------------------------------------------------
 SkipSampleEnd:
+
+;		ld		hl,(ModDestbuffer)
+;		ld		b,SamplesPerFrame
+;UnsignBuffer:
+;		ld		a,(hl)
+;		add		a,$80
+;		ld		(hl),a
+;		inc		l
+;		djnz	UnsignBuffer
+
 		jp		RestoreMMUs
 
 
@@ -484,7 +494,7 @@ SetupNote:
 ; Workout ChannelVolume*SampleVolume*GlobalVolume
 ; ***********************************************************************************************
 UpdateChennelVolume:
-		; combine sample volvume with channel volume
+		; combine sample volume with channel volume
 		ld		e,(ix+note_volume_sample)
 		ld		d,(ix+note_volume_channel)
 		mul

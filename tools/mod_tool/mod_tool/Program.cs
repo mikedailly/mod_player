@@ -9,7 +9,7 @@ namespace mod_tool
     class Program
     {
         const double PAL = 7093789.2;
-        const double FREQ = 128.0 * 50.0;
+        const double FREQ = 255.0 * 50.0;
         public static FileBuffer buffer;
         static void Main(string[] args)
         {
@@ -28,6 +28,10 @@ namespace mod_tool
                     d = d / FREQ;
 
                     d = d * 256.0;
+                    if(d >= 65536.0)
+                    {                        
+                        d = 0xffff;
+                    }
 
                     buffer.Write16((UInt16)d);
                 }

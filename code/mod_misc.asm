@@ -1,3 +1,6 @@
+
+MOD_Z80_DMA_DATAGEAR_PORT			equ $6b
+
 ; ****************************************************************************************
 ; multiplication of a 8 by 16bit  numbers into a 24-bit product
 ;
@@ -50,9 +53,28 @@ ModPlaySample:
 		; Now set the transfer going...
 		ld hl,ModSoundDMA
 		ld b,$16
-		ld c,Z80_DMA_DATAGEAR_PORT
+		ld c,MOD_Z80_DMA_DATAGEAR_PORT
 		otir
 		ret
+
+
+DMAReadLen:
+		ld		a,$6
+		call	DMAReadRegister
+		ld		l,a
+		in		a,(MOD_Z80_DMA_DATAGEAR_PORT)
+		ld		h,a
+		ret
+
+DMAReadRegister:
+		push	af
+		ld		a,$bb
+		out		(MOD_Z80_DMA_DATAGEAR_PORT),a
+		pop		af
+		out		(MOD_Z80_DMA_DATAGEAR_PORT),a
+		in		a,(MOD_Z80_DMA_DATAGEAR_PORT)
+		ret
+		
 
 ;===========================================================================
 ;
@@ -75,7 +97,8 @@ ModSampleLength:
 		db $68			; R2-write B time byte, increment, to memory, bitmask
 		db $22			; R2-Cycle length port B + NEXT extension
 ModSampleRate:
-		db (DMABaseFreq) / (((SamplesPerFrame+5)*TVRate))		; set PreScaler 875000kHz/freq = ???
+		db (DMABaseFreq) / (((SamplesPerFrame)*TVRate))		; set PreScaler 875000kHz/freq = ???
+		;db	66
 
 		db $cd			; R4-Dest destination port
 		;db $fe,$00		; $FFDF = SpecDrum
