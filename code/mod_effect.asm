@@ -77,7 +77,8 @@ SetVolume:
 		jr		c,@InRange
 		ld		a,$40
 @InRange:
-		ld		(ix+note_volume),a
+		ld		(ix+note_volume_channel),a
+		call	UpdateChennelVolume
 		jp		NoEffect
 
 

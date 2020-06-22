@@ -44,8 +44,8 @@ ReadAllChannelNotes:
 		xor		a
 		ld		(ix+note_pitch_bend),a		; clear pitch bending
 		ld		(ix+(note_pitch_bend+1)),a
-		ld		a,$40
-		ld		(ix+note_volume),a
+		;ld		a,$40
+		;ld		(ix+note_volume),a
 
 
 		;
@@ -438,6 +438,7 @@ SetupNote:
 		push	de
 		pop		iy
 
+
 		; copy sample base offset
 		ld		e,(iy+sample_offset)
 		ld		d,(iy+(sample_offset+1))
@@ -457,12 +458,11 @@ SetupNote:
 		ld		d,(iy+(sample_len+1))
 		ld		(ix+note_sample_length),e
 		ld		(ix+(note_sample_length+1)),d
-		ld		e,(iy+sample_vol)
-		ld		d,(ix+note_volume)
-		mul
-		ld		b,6
-		BSRA	DE,B						; DE>>6
-		ld		(ix+note_volume),e
+	
+		ld		a,(iy+sample_vol)
+		ld		(ix+note_volume_sample),a
+		call	UpdateChennelVolume
+
 		
 @SkipSampleSetup
 		; work out how many bytes we skip in the sample each frame
@@ -479,5 +479,26 @@ SetupNote:
 		pop		hl
 		ret
 
-	
+
+; ***********************************************************************************************
+; Workout ChannelVolume*SampleVolume*GlobalVolume
+; ***********************************************************************************************
+UpdateChennelVolume:
+		; combine sample volvume with channel volume
+		ld		e,(ix+note_volume_sample)
+		ld		d,(ix+note_volume_channel)
+		mul
+		ld		b,6
+		BSRA	DE,B						; DE>>6
+
+		; now mul in global volume
+		ld		a,(ModGlobalVolume)
+		ld		d,a
+		mul
+		BSRA	DE,B						; DE>>6
+
+		ld		(ix+note_volume),e			; set final volume ($00-$40)
+		ret
+
+
 

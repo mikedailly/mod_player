@@ -323,6 +323,33 @@ ModPlay:
 		; get next sequence
 		ld		a,(hl)
 		call	SetUpSequence
+
+		; set global volume
+		ld		a,$40
+		ld		(ModGlobalVolume),a
+
+		; init all channels
+		ld		ix,ModChanData
+		ld		a,(ModNumChan)
+		ld		b,a
+		
+InitAllChannels:
+		ld		a,$40
+		ld		(ix+note_volume_sample),a
+		ld		(ix+note_volume_channel),a
+		ld		(ix+note_volume),a
+	
+		xor		a
+		ld		(ix+note_sample),a
+		ld		(ix+note_sample_off),a
+		ld		(ix+(note_sample_off+1)),a
+		ld		(ix+note_sample_length),a
+		ld		(ix+(note_sample_length+1)),a
+		ld		(ix+note_sample_lengthF),a
+
+		ld		de,note_size
+		add		ix,de
+		djnz	InitAllChannels
 		ret
 
 

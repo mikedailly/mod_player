@@ -40,8 +40,9 @@ sample_info_len		rb	0
 
 					rsreset
 note_volume			rb	1		; current channel volume
-note_volume_effect	rb	1		; when setting volume, we need to be able to override the sample one
-note_sample			rb	1		; the sample being played
+note_volume_channel	rb	1		; when setting volume, we need to be able to override the sample one
+note_volume_sample	rb	1		; the last sample volume
+note_sample			rb	1		; the sample being played (0 for nothing playing)
 note_period			rw	1		; 12 bit sample period (or effect paramater)
 note_pitch_bend		rw	1		; the pitch bend delta (signed 16bit)
 note_last_period	rw	1		; Last note period (incase we need to restore it)
@@ -96,10 +97,11 @@ ModNumChan					db	0			; number of channels 1-8
 ModHighestPattern			db	0			; largest pattern number
 ModChannelData				dw	0			; base of channel data
 ModSequenceSize				dw	0			; size of a single sequence (4*channels*64 notes)
+ModGlobalVolume				db	0			; the global mod volume
+
 ModPattern					ds	128						; copy to pattern sequence local so we don't have to bank switch to read it
 ModSamples					ds	31*sample_info_len		; Sample structs + address of all sampls (offset:w,bank:b)
 ModSequenceData				ds	128*3					; start address of all sequences (n channels * 64 entries)
-
 ModPlaying					db	0			; is the mod playing?
 ModSampleCopySize			db	0			; number of bytes being copied in "this" sample
 ModChannelCounter			db	0			; channel number being processed
