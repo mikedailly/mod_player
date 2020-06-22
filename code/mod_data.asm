@@ -1,9 +1,10 @@
 ; mod file data
 
-MOD_BANK		equ	$52				; which MMU bank to use (this one and the next)
+MOD_BANK		equ	$52				; which 2xMMU banks to use (this one and the next)
 MOD_ADD			equ	$4000			; base address of this bank
-MOD_VOL_BANK	equ	$50				; which MMU bank to use for volumes
+MOD_VOL_BANK	equ	$50				; which 2xMMU banks to use for volumes (this one and the next)
 MOD_VOL_ADD		equ	$0000			; base of volume banks
+
 
 DMABaseFreq		equ	875000					; DMA base freq
 TVRate			equ	50						; framerate

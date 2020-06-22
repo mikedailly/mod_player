@@ -314,20 +314,18 @@ CopyLoop:
 		ld		e,a					; get index into volume table
 		ld		a,(de)				; get converted volume
 		add		a,(hl)				; mix into buffer
-@less2:
 		ld		(hl),a
 		inc		l
 		djnz	CopyLoop			; Build up a frames worth
-SkipCopyLoop:
 
 
 
 
 		exx
-		ld		a,(ModSampleCopySize)	; is the copy size the same as samples per frame?
-		cp		SamplesPerFrame		; if not, we didn't copy a whole frame, so sample has ended
+		ld		a,(ModSampleCopySize)		; is the copy size the same as samples per frame?
+		cp		SamplesPerFrame				; if not, we didn't copy a whole frame, so sample has ended
 		jr		z,@NotSampleEnd
-		ld		hl,0				; check for repeating samples here.....
+		ld		hl,0						; check for repeating samples here.....
 		jp		@NoBankSwap
 @NotSampleEnd:
 		; check to see if we've crossed a bank
@@ -469,16 +467,15 @@ SetupNote:
 @SkipSampleSetup
 		; work out how many bytes we skip in the sample each frame
 		push	hl
-		ld		l,(ix+note_sample_delta)
-		ld		h,(ix+(note_sample_delta+1))
-		ld		e,SamplesPerFrame
-		ld		d,0
+		ld		e,(ix+note_sample_delta)
+		ld		d,(ix+(note_sample_delta+1))
+		ld		l,SamplesPerFrame
 		push	bc
-		call	Mul_16x16
+		call	Mul_16x8			;Mul_16x16
 		pop		bc
-		ld		(ix+note_length_deltaF),e
-		ld		(ix+note_length_delta),d
-		ld		(ix+(note_length_delta+1)),l
+		ld		(ix+note_length_deltaF),l
+		ld		(ix+note_length_delta),h
+		ld		(ix+(note_length_delta+1)),a
 		pop		hl
 		ret
 
