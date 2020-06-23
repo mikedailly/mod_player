@@ -1,12 +1,128 @@
 ;
 ; Mod_player
 ;
-
 ; ********************************************************************************************
 ;	A  = root bank of MOD file (tune always starts at 0)
 ;   B  = InitSamples (0 = no)
 ; ********************************************************************************************
 ModInit:
+	Call	DetectDMALength
+
+
+	; restore SpecDrumPort
+	ld		hl,$ffdf					; set the SpecDrum Port
+	ld		(DMADestPort),hl
+	ld		hl,ModSamplesPerFrame		; set number of samples per frame
+	ld		(ModSampleLength),hl
+	ld		a,(ModDMAValue)				; set DMA value
+	ld		(DMASampleRate),a
+	ret
+
+; ********************************************************************************************
+; Detect how many bytes the DMA can send a frame at the 
+;   B  = InitSamples (0 = no)
+; ********************************************************************************************
+DetectDMALength:
+	ld		a,SamplesPerFrame
+	ld		hl,$fdfd				; use a non-existant port
+	ld		(DMADestPort),hl	
+	
+	; (DMABaseFreq) / (((SamplesPerFrame)*TVRate))	
+	ld		e,SamplesPerFrame
+	ld		d,TVRate
+	mul
+	ld		c,e
+	ld		b,d
+	ld		hl,$000D
+	ld		ix,$59F8
+	call	Div_32x16
+	ld		a,ixl
+	ld		(ModDMAValue),a
+	
+	ld		hl,ModSamplesPerFrame
+	ld		(ModSampleLength),hl
+
+
+	; ------------------------------------------------------------------------------------------------
+	; Loop around multiple DMA transfers and detect when we've managed to transfer everything
+	; ------------------------------------------------------------------------------------------------
+TryDMAAgain:
+	call	WaitForRasterPos
+
+	ld		a,(ModDMAValue)
+	ld		(DMASampleRate),a			; store DMA prescaler value into DMA program
+	ld		hl,0
+	call	ModPlaySample
+
+	; make sure we're past the scan line...
+	ld		b,0
+@lppp2:
+	nop
+	nop
+	djnz	@lppp2
+
+	; wait a frame
+	call	WaitForRasterPos
+
+	; now read how far we got...
+	call	DMAReadLen		
+
+	; now check to see if we transferred all the data
+	ld		a,Hi(SamplesPerFrame)
+	cp		h
+	jr		nz,SizeNotFound
+	ld		a,Lo(SamplesPerFrame)
+	cp		l
+	jr		nz,SizeNotFound
+
+	; DMA size found
+	ret
+
+SizeNotFound
+	ld		b,0
+@lppp23:
+	nop
+	nop
+	djnz	@lppp23
+
+	; wait another frame
+	call	WaitForRasterPos
+
+	ld		b,0
+@lppp4:
+	nop
+	nop
+	djnz	@lppp4
+
+
+	ld		a,(ModDMAValue)
+	dec		a
+	ld		(ModDMAValue),a
+	jp		TryDMAAgain
+
+@FoundSize:
+	ret
+
+WaitForRasterPos:
+	call	ReadRaster
+	xor		a
+	cp		h
+	jr		nz,WaitForRasterPos
+	ld		a,$30
+	cp		l
+	jr		nz,WaitForRasterPos
+	ret
+
+
+
+; ********************************************************************************************
+;	A  = root bank of MOD file (tune always starts at 0)
+;   B  = InitSamples (0 = no)
+; ********************************************************************************************
+ModLoad:
+	;ld		de,255*50
+	;call	GenerateNoteTable
+
 	ld		(ModBaseBank),a
 	NextReg	MOD_BANK,a				; bank in mod file
 	ld		a,b
@@ -380,6 +496,52 @@ SetUpSequence:
 		xor		a
 		ld		(ModSequenceIndex),a
 		ret
+
+
+
+
+; ********************************************************************************************
+; Generate note table
+; DE = Frequency
+; ********************************************************************************************
+GenerateNoteTable:
+		ld		(Mod_table_freq),de
+		ld		bc,4095
+		ld		hl,NoteLookup+(4095*2)
+
+@BuildAll:
+		push	hl
+		push	bc
+		exx
+		
+		ld		hl,$6C3E			; PAL = 7093789.2*256
+		ld		ix,$1D33
+		pop		bc
+		sla		c					; PAL / (note*2)
+		rl		b
+
+		call	Div_32x16			; hlix / bc = hlix = answer, de   = remainder
+
+		ld		bc,(Mod_table_freq)
+		call	Div_32x16			; hlix / bc
+		
+		pop		hl
+		push	ix
+		pop		de
+		ld		(hl),e
+		inc		hl
+		ld		(hl),d
+		exx
+		dec		hl
+		dec		hl
+		dec		bc
+		ld		a,b
+		or		c
+		jr		nz,@BuildAll
+		ret
+
+Mod_table_freq	dw	0
+
 
 
 		include	"mod_tick.asm"

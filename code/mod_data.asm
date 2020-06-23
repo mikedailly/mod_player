@@ -8,7 +8,7 @@ MOD_VOL_ADD		equ	$0000			; base of volume banks
 
 DMABaseFreq		equ	875000					; DMA base freq
 TVRate			equ	50						; framerate
-SamplesPerFrame	equ	255						; 104 samples per frame
+SamplesPerFrame	equ	255						; 104 samples per frame  (69 the LOWEST value possible)
 PlaybackFreq	equ	SamplesPerFrame*TVRate	; freq
 
 
@@ -83,6 +83,9 @@ ModIDs:
 
 
 ; Mod file data
+ModSamplesPerFrame			db	0			; number of samples per frame we're working to....
+ModDMAValue					db	0			; 875000/(samples_per_frame*TVRate)
+
 ModInitSamples				db	0			; temp so we know to init the samples or not (unsign, shift etc)
 ModBaseBank					db	0			; base bank of mod file
 ModMMUStore					db	0,0,0,0		; backup the MMU regs

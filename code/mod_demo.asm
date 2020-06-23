@@ -31,8 +31,8 @@ StartAddress:
 	    im      2
 	    ei
 
-	    NextReg 128,0                   ; Make sure expansion bus is off.....
-	    NextReg $07,3                   ; Set to 28Mhz
+	    NextReg 128,0           ; Make sure expansion bus is off.....
+	    NextReg $07,3           ; Set to 28Mhz
 	    NextReg $05,1			; 50Hz mode  (bit 1 needs to be read from OS)
 	    ;NextReg $05,4			; 60Hz mode
 	    NextReg	$08,%01001010   ; $50			; disable ram contention, enable specdrum, turbosound
@@ -40,9 +40,14 @@ StartAddress:
 	    NextReg $4a,0           ; transparent fallback
 	    NextReg $4c,0           ; tile transparent colour
 
+		;call	Cls
+		;ld		a,7
+		;call	ClsATTR
+		call	ModInit			; initialise the mod player - generate tables etc...
+
 		ld		a,ModFileBank	; where the mod file lives
 		ld		b,1				; we need to setup the samples first time in...
-		call	ModInit
+		call	ModLoad
 		call	ModPlay
 
 ; ----------------------------------------------------------------------------------------------------
@@ -77,6 +82,21 @@ WaitVBlank:
     	ld      a,0
     	out     ($fe),a
 
+
+		;NextReg	$52,10
+		;NextReg	$53,11
+
+		;call	DMAReadLen
+		;push	hl
+		;ld		a,h
+		;ld		a,(ModDMAValue)
+		;ld		de,$4004
+		;call	PrintHex
+		;pop		hl
+		;ld		a,l
+		;ld		de,$4006
+		;call	PrintHex
+
 		jp      MainLoop
 
 
@@ -93,8 +113,8 @@ WaitVBlank:
 ModFile:
 ;		incbin	"abandon_2_0.mod"
 ;		incbin	"test2.mod"
-;		incbin	"blood_money_title.mod"	
-		incbin	"axelf.mod"
+		incbin	"blood_money_title.mod"	
+;		incbin	"axelf.mod"
 
 ; *****************************************************************************************************************************
 ; save

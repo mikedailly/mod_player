@@ -925,8 +925,10 @@ SoundDMA:
 		db $ca			; unknown
 
 		db $7d			; R0-Transfer mode, A -> B, write adress + block length
-SampleAddress	db $00,$60				; src
-SampleLength	dw SamplesPerFrame		; length
+SampleAddress	
+		db $00,$60				; src
+SampleLength	
+		dw SamplesPerFrame		; length
 				
 		db $54			; R1-read A time byte, increment, to memory, bitmask
 		db $02			; R1-Cycle length port A

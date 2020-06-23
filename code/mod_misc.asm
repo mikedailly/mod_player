@@ -96,11 +96,12 @@ ModSampleLength:
 
 		db $68			; R2-write B time byte, increment, to memory, bitmask
 		db $22			; R2-Cycle length port B + NEXT extension
-ModSampleRate:
+DMASampleRate:
 		db (DMABaseFreq) / (((SamplesPerFrame)*TVRate))		; set PreScaler 875000kHz/freq = ???
 		;db	66
 
 		db $cd			; R4-Dest destination port
+DMADestPort:
 		;db $fe,$00		; $FFDF = SpecDrum
 		db $df,$ff		; $FFDF = SpecDrum
 

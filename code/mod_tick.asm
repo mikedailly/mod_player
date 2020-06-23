@@ -373,8 +373,6 @@ SkipSampleEnd:
 
 		jp		RestoreMMUs
 
-
-
 		
 		; DEBUG - record sample into memory
 		ld		b,SamplesPerFrame
