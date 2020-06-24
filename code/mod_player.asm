@@ -49,7 +49,7 @@ DetectDMALength:
 		ld		hl,SamplesPerFrame
 		ld		(ModSampleLength),hl
 
-
+		
 	; ------------------------------------------------------------------------------------------------
 	; Loop around multiple DMA transfers and detect when we've managed to transfer everything
 	; ------------------------------------------------------------------------------------------------
@@ -70,9 +70,24 @@ TryDMAAgain:
 
 		; wait a frame
 		call	WaitForRasterPos
-Readlen
+
 		; now read how far we got...
 		call	DMAReadLen		
+		
+		;push	hl
+		;push	hl
+		;ld		a,h
+		;ld		de,$4004
+		;call	PrintHex
+		;pop		hl
+		;ld		a,l
+		;ld		de,$4006
+		;call	PrintHex
+		;ld		a,(ModDMAValue)
+		;ld		de,$4001
+		;call	PrintHex
+		;pop		hl
+
 
 		; now check to see if we transferred all the data
 		ld		a,Hi(SamplesPerFrame)
@@ -213,6 +228,7 @@ CopyPattern
 		djnz	@CheckAll
 		ld		(ModHighestPattern),a	; remember the highest  pattern
 	
+
 		; if there is a file ID, skip it....
 		ld		b,a						; remember for later
 		ld		a,(ModNumInst)
@@ -317,12 +333,13 @@ AllChannels2:
 		ld		h,a
 		ld		(ix+sample_rep),l
 		ld		(ix+(sample_rep+1)),h	
-		pop		bc
-		pop		hl
 
 
 		; Work out the address of the NEXT sample
 @NoRepeat
+		pop		bc
+		pop		hl
+
 		ld		e,(ix+sample_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
 		ld		d,(ix+(sample_len+1))
 		add		hl,de
@@ -332,7 +349,6 @@ AllChannels2:
 		rrca							; /2 and get number of banks  (lower bit is 0)
 		add		a,c
 		ld		c,a
-
 
 
 		ld		a,(ModInitSamples)
@@ -351,8 +367,12 @@ AllChannels2:
 		ld		b,(ix+(sample_len+1))
 		ld		a,c
 		or		b
-		jr		z,@EmptySample
-@DoAllSample:
+		jr		z,EmptySample
+
+
+		;
+		; Loop over 
+DoAllSample:
 		ld		a,(hl)
 		sra		a
 		sra		a
@@ -376,8 +396,8 @@ AllChannels2:
 		add		bc,-1
 		ld		a,b
 		or		c
-		jr		nz,@DoAllSample
-@EmptySample
+		jr		nz,DoAllSample
+EmptySample
 		exx
 
 
@@ -387,7 +407,7 @@ DontInitSamples:
 		add		ix,de
 		dec		b
 		jp		nz,AllChannels2
-	
+
 
 		; ----------------------------------------------------------------------------------------
 		; clear playback buffer
@@ -398,6 +418,7 @@ DontInitSamples:
 @ClearSample:
 		ld		(hl),a
 		djnz	@ClearSample
+
 
 		ret
 

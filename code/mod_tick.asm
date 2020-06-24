@@ -329,9 +329,9 @@ CopyLoop:
 		ld		a,(ModSampleCopySize)		; is the copy size the same as samples per frame?
 		cp		SamplesPerFrame				; if not, we didn't copy a whole frame, so sample has ended
 		jr		z,@NotSampleEnd
-		ld		a,(ix+note_sample_repb)
-		ld		l,(ix+note_sample_rep)
-		ld		h,(ix+(note_sample_rep+1))
+		;ld		a,(ix+note_sample_repb)
+		;ld		l,(ix+note_sample_rep)
+		;ld		h,(ix+(note_sample_rep+1))
 		ld		hl,0						; check for repeating samples here.....
 		jp		@NoBankSwap
 @NotSampleEnd:
