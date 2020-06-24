@@ -111,12 +111,12 @@ WaitVBlank:
 
 		seg	MOD_SEG
 ModFile:
-		incbin	"8channel.xm"
+;		incbin	"8channel.xm"
 ;		incbin	"LIES.mod"
 ;		incbin	"MATKAMIE.mod"
 ;		incbin	"abandon_2_0.mod"
 ;		incbin	"test2.mod"
-;		incbin	"blood_money_title.mod"	
+		incbin	"blood_money_title.mod"	
 ;		incbin	"axelf.mod"
 
 ; *****************************************************************************************************************************
