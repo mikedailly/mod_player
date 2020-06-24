@@ -8,7 +8,7 @@ MOD_VOL_ADD		equ	$0000			; base of volume banks
 
 DMABaseFreq		equ	875000					; DMA base freq
 TVRate			equ	50						; framerate
-SamplesPerFrame	equ	255						; 104 samples per frame  (69 the LOWEST value possible)
+SamplesPerFrame	equ	255						; 104 samples per frame  (71 the LOWEST value possible - timings change onm HDMI/VGA etc)
 PlaybackFreq	equ	SamplesPerFrame*TVRate	; freq
 
 
@@ -32,6 +32,7 @@ sample_len			rb	3		; length in words (*2=bytes)
 sample_fine			rb	1		; sample fine tune 0-7, +8-$f = -8 to -1
 sample_vol			rb	1		; volume, range is $00 to $40
 sample_rep			rw	1		; repeat point
+sample_rep_bank		rb	1		; repeat point BANK
 sample_rep_len		rw	1		; repeat length
 sample_offset		rw	1		; the offset into the bank for the actual sample data
 sample_bank			rb	1		; the start bank of the sample
@@ -83,7 +84,7 @@ ModIDs:
 
 
 ; Mod file data
-ModSamplesPerFrame			db	0			; number of samples per frame we're working to....
+ModSamplesPerFrame			dw	0			; number of samples per frame we're working to....
 ModDMAValue					db	0			; 875000/(samples_per_frame*TVRate)
 
 ModInitSamples				db	0			; temp so we know to init the samples or not (unsign, shift etc)
@@ -101,6 +102,8 @@ ModHighestPattern			db	0			; largest pattern number
 ModChannelData				dw	0			; base of channel data
 ModSequenceSize				dw	0			; size of a single sequence (4*channels*64 notes)
 ModGlobalVolume				db	0			; the global mod volume
+Mod_table_freq				dw	0			; used in table generation
+ModSamplesToFill			dw	0			; number of sample bytes to fill with this note/sample
 
 ModPattern					ds	128						; copy to pattern sequence local so we don't have to bank switch to read it
 ModSamples					ds	31*sample_info_len		; Sample structs + address of all sampls (offset:w,bank:b)

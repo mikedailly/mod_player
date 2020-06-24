@@ -9,7 +9,7 @@ namespace mod_tool
     class Program
     {
         const double PAL = 7093789.2;
-        const double FREQ = 255.0 * 50.0;
+        const double FREQ = 255.0 * 50.0;           // 71 is probably the smallest size (VGA takes a timing hit)
         public static FileBuffer buffer;
         static void Main(string[] args)
         {

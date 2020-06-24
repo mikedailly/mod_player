@@ -40,9 +40,9 @@ StartAddress:
 	    NextReg $4a,0           ; transparent fallback
 	    NextReg $4c,0           ; tile transparent colour
 
-		;call	Cls
-		;ld		a,7
-		;call	ClsATTR
+		call	Cls
+		ld		a,7
+		call	ClsATTR
 		call	ModInit			; initialise the mod player - generate tables etc...
 
 		ld		a,ModFileBank	; where the mod file lives
@@ -54,9 +54,9 @@ StartAddress:
 ;               Main loop
 ; ----------------------------------------------------------------------------------------------------
 MainLoop:
-	xor	a
-	ld	(FrameCount),a
-	ld	(VBlank),a
+		xor	a
+		ld	(FrameCount),a
+		ld	(VBlank),a
 
 WaitVBlank:
     	ld	a,(VBlank)
@@ -111,9 +111,12 @@ WaitVBlank:
 
 		seg	MOD_SEG
 ModFile:
+		incbin	"8channel.xm"
+;		incbin	"LIES.mod"
+;		incbin	"MATKAMIE.mod"
 ;		incbin	"abandon_2_0.mod"
 ;		incbin	"test2.mod"
-		incbin	"blood_money_title.mod"	
+;		incbin	"blood_money_title.mod"	
 ;		incbin	"axelf.mod"
 
 ; *****************************************************************************************************************************

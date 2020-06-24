@@ -6,112 +6,120 @@
 ;   B  = InitSamples (0 = no)
 ; ********************************************************************************************
 ModInit:
-	Call	DetectDMALength
+		Call	DetectDMALength
 
 
-	; restore SpecDrumPort
-	ld		hl,$ffdf					; set the SpecDrum Port
-	ld		(DMADestPort),hl
-	ld		hl,ModSamplesPerFrame		; set number of samples per frame
-	ld		(ModSampleLength),hl
-	ld		a,(ModDMAValue)				; set DMA value
-	ld		(DMASampleRate),a
-	ret
+		; restore SpecDrumPort
+		ld		hl,$ffdf					; set the SpecDrum Port
+		ld		(DMADestPort),hl
+		ld		hl,SamplesPerFrame			; set number of samples per frame
+		ld		(ModSampleLength),hl
+		ld		a,(ModDMAValue)				; set DMA value
+		ld		(DMASampleRate),a
+		ret
 
 ; ********************************************************************************************
-; Detect how many bytes the DMA can send a frame at the 
-;   B  = InitSamples (0 = no)
+; Function:	Detect how many bytes the DMA can send a frame at the desired frequency calculation
+;			and adjust it so it's as close as we can get
+; In:		B  = InitSamples (0 = no)
 ; ********************************************************************************************
 DetectDMALength:
-	ld		a,SamplesPerFrame
-	ld		hl,$fdfd				; use a non-existant port
-	ld		(DMADestPort),hl	
+		ld		a,SamplesPerFrame
+		ld		hl,$fdfd				; use a non-existent port
+		ld		(DMADestPort),hl	
 	
-	; (DMABaseFreq) / (((SamplesPerFrame)*TVRate))	
-	ld		e,SamplesPerFrame
-	ld		d,TVRate
-	mul
-	ld		c,e
-	ld		b,d
-	ld		hl,$000D
-	ld		ix,$59F8
-	call	Div_32x16
-	ld		a,ixl
-	ld		(ModDMAValue),a
+		; (DMABaseFreq) / (((SamplesPerFrame)*TVRate))	
+		ld		e,SamplesPerFrame
+		ld		d,TVRate
+		mul
+		ld		c,e
+		ld		b,d
+		ld		hl,$000D
+		ld		ix,$59F8
+		call	Div_32x16
+		ld		a,ixl
+
+		; Go OVER the calculated value in case the perfect match is up just a bit....
+		add		a,10
+		jr		nc,@Skip
+		ld		a,$ff				; can't go above $ff no matter what - largest DMA Prescaler value
+@Skip:
+		ld		(ModDMAValue),a
 	
-	ld		hl,ModSamplesPerFrame
-	ld		(ModSampleLength),hl
+		ld		hl,SamplesPerFrame
+		ld		(ModSampleLength),hl
 
 
 	; ------------------------------------------------------------------------------------------------
 	; Loop around multiple DMA transfers and detect when we've managed to transfer everything
 	; ------------------------------------------------------------------------------------------------
 TryDMAAgain:
-	call	WaitForRasterPos
+		call	WaitForRasterPos
 
-	ld		a,(ModDMAValue)
-	ld		(DMASampleRate),a			; store DMA prescaler value into DMA program
-	ld		hl,0
-	call	ModPlaySample
+		ld		a,(ModDMAValue)
+		ld		(DMASampleRate),a			; store DMA prescaler value into DMA program
+		ld		hl,0
+		call	ModPlaySample
 
 	; make sure we're past the scan line...
-	ld		b,0
+		ld		b,0
 @lppp2:
-	nop
-	nop
-	djnz	@lppp2
+		nop
+		nop
+		djnz	@lppp2
 
-	; wait a frame
-	call	WaitForRasterPos
+		; wait a frame
+		call	WaitForRasterPos
+Readlen
+		; now read how far we got...
+		call	DMAReadLen		
 
-	; now read how far we got...
-	call	DMAReadLen		
+		; now check to see if we transferred all the data
+		ld		a,Hi(SamplesPerFrame)
+		cp		h
+		jr		nz,SizeNotFound
+		ld		a,Lo(SamplesPerFrame)
+		cp		l
+		jr		nz,SizeNotFound
 
-	; now check to see if we transferred all the data
-	ld		a,Hi(SamplesPerFrame)
-	cp		h
-	jr		nz,SizeNotFound
-	ld		a,Lo(SamplesPerFrame)
-	cp		l
-	jr		nz,SizeNotFound
-
-	; DMA size found
-	ret
+		; DMA size found
+		ret
 
 SizeNotFound
-	ld		b,0
+		ld		b,0
 @lppp23:
-	nop
-	nop
-	djnz	@lppp23
+		nop
+		nop
+		djnz	@lppp23
 
-	; wait another frame
-	call	WaitForRasterPos
+		; wait another frame
+		call	WaitForRasterPos
 
-	ld		b,0
+		ld		b,0
 @lppp4:
-	nop
-	nop
-	djnz	@lppp4
+		nop
+		nop
+		djnz	@lppp4
 
 
-	ld		a,(ModDMAValue)
-	dec		a
-	ld		(ModDMAValue),a
-	jp		TryDMAAgain
+		ld		a,(ModDMAValue)
+		dec		a
+		ret		z
+		ld		(ModDMAValue),a
+		jp		TryDMAAgain
 
 @FoundSize:
-	ret
+		ret
 
 WaitForRasterPos:
-	call	ReadRaster
-	xor		a
-	cp		h
-	jr		nz,WaitForRasterPos
-	ld		a,$30
-	cp		l
-	jr		nz,WaitForRasterPos
-	ret
+		call	ReadRaster
+		xor		a
+		cp		h
+		jr		nz,WaitForRasterPos
+		ld		a,$30
+		cp		l
+		jr		nz,WaitForRasterPos
+		ret
 
 
 
@@ -120,239 +128,278 @@ WaitForRasterPos:
 ;   B  = InitSamples (0 = no)
 ; ********************************************************************************************
 ModLoad:
-	;ld		de,255*50
-	;call	GenerateNoteTable
+		ld		(ModBaseBank),a
+		NextReg	MOD_BANK,a				; bank in mod file
+		ld		a,b
+		ld		(ModInitSamples),a
 
-	ld		(ModBaseBank),a
-	NextReg	MOD_BANK,a				; bank in mod file
-	ld		a,b
-	ld		(ModInitSamples),a
-
-	; pre-process the 31 samples.
-	ld		ix,MOD_ID						; get number of instruments
-	call	ModGetInstrumentsChannels		; detect the number of instruments	
+		; pre-process the 31 samples.
+		ld		ix,MOD_ID						; get number of instruments
+		call	ModGetInstrumentsChannels		; detect the number of instruments	
 
 
-	ld		b,a
-	ld		ix,MOD_SAMPLES			; base of sample table
-	ld		iy,ModSamples			; sample structs
+		ld		b,a
+		ld		ix,MOD_SAMPLES			; base of sample table
+		ld		iy,ModSamples			; sample structs
 @SetUpAllSamples:
-	; swap sample length from amiga format
-	ld		h,(ix+file_sample_len)			; sample size in WORDS (*2 for bytes)
-	ld		l,(ix+(file_sample_len+1))
-	add		hl,hl
-	ld		(iy+sample_len),l
-	ld		(iy+(sample_len+1)),h
-	ld		a,0
-	adc		a,0
-	ld		(iy+(sample_len+2)),l
+		; swap sample length from amiga format
+		ld		h,(ix+file_sample_len)			; sample size in WORDS (*2 for bytes)
+		ld		l,(ix+(file_sample_len+1))
+		add		hl,hl
+		ld		(iy+sample_len),l
+		ld		(iy+(sample_len+1)),h
+		ld		a,0
+		adc		a,0
+		ld		(iy+(sample_len+2)),l
 	
-	; fine tune
-	ld		a,(ix+file_sample_fine)
-	ld		(iy+sample_fine),a
+		; fine tune
+		ld		a,(ix+file_sample_fine)
+		ld		(iy+sample_fine),a
 
-	; volume adjust
-	ld		a,(ix+file_sample_vol)
-	cp		63
-	jr		c,@SkipReset
-	ld		a,63
+		; volume adjust
+		ld		a,(ix+file_sample_vol)
+		cp		63
+		jr		c,@SkipReset
+		ld		a,63
 @SkipReset:
-	ld		(iy+sample_vol),a
+		ld		(iy+sample_vol),a
 
-	; swap sample repeat point from amiga format
-	ld		a,(ix+file_sample_rep)		
-	ld		(iy+(sample_rep+1)),a
-	ld		a,(ix+(file_sample_rep+1))
-	ld		(iy+sample_rep),a
+		; swap sample repeat point from amiga format
+		ld		a,(ix+file_sample_rep)		
+		ld		(iy+(sample_rep+1)),a
+		ld		a,(ix+(file_sample_rep+1))
+		ld		(iy+sample_rep),a
 
-	; swap sample repeat length  from amiga format
-	ld		h,(ix+file_sample_rep_len)		
-	ld		l,(ix+(file_sample_rep_len+1))
-	ld		(iy+sample_rep_len),l
-	ld		(iy+(sample_rep_len+1)),h
+		; swap sample repeat length  from amiga format
+		ld		h,(ix+file_sample_rep_len)		
+		ld		l,(ix+(file_sample_rep_len+1))
+		ld		(iy+sample_rep_len),l
+		ld		(iy+(sample_rep_len+1)),h
 
-	ld		de,file_sample_info_len			; move to next sample
-	add		ix,de
-	ld		de,sample_info_len			; move to next sample
-	add		iy,de
-	djnz	@SetUpAllSamples
-
-
+		ld		de,file_sample_info_len			; move to next sample
+		add		ix,de
+		ld		de,sample_info_len			; move to next sample
+		add		iy,de
+		djnz	@SetUpAllSamples
 
 
-	; ix points to song info... so put into hl
-	push	ix
-	pop		hl
-	ld		a,(ix+0)				; song length
-	ld		(ModSongLength),a		; 1 to 128
-	ld		a,(ix+1)				; song restart point
-	ld		(ModSongRestart),a		; 1 to 128
-	inc		hl
-	inc		hl
-	;ld		(ModSequanceOrder),hl			; get the base of the sequence order
-	;ld		(ModSequanceOrder_current),hl	; and store current position
+
+
+		; ix points to song info... so put into hl
+		push	ix
+		pop		hl
+		ld		a,(ix+0)				; song length
+		ld		(ModSongLength),a		; 1 to 128
+		ld		a,(ix+1)				; song restart point
+		ld		(ModSongRestart),a		; 1 to 128
+		inc		hl
+		inc		hl
+		;ld		(ModSequanceOrder),hl			; get the base of the sequence order
+		;ld		(ModSequanceOrder_current),hl	; and store current position
 CopyPattern
-	; detect largest pattern number
-	xor		a
-	ld		b,128
-	ld		ix,ModPattern
+		; detect largest pattern number
+		xor		a
+		ld		b,128
+		ld		ix,ModPattern
 @CheckAll:
-	ld		d,(hl)
-	ld		(ix+0),d				; save in local storage
-	cp		d
-	jr		nc,@Skip
-	ld		a,d
+		ld		d,(hl)
+		ld		(ix+0),d				; save in local storage
+		cp		d
+		jr		nc,@Skip
+		ld		a,d
 @Skip:
-	inc		hl
-	inc		ix
-	djnz	@CheckAll
-	ld		(ModHighestPattern),a	; remember the highest  pattern
+		inc		hl
+		inc		ix
+		djnz	@CheckAll
+		ld		(ModHighestPattern),a	; remember the highest  pattern
 	
-	; if there is a file ID, skip it....
-	ld		b,a						; remember for later
-	ld		a,(ModNumInst)
-	cp		15
-	jr		z,@NoID
-	add		hl,4					; skip ID
+		; if there is a file ID, skip it....
+		ld		b,a						; remember for later
+		ld		a,(ModNumInst)
+		cp		15
+		jr		z,@NoID
+		add		hl,4					; skip ID
 @NoID:
 
-	; HL now pointing to pattern data
-	ld		(ModChannelData),hl
-	inc		b						; now loop over all the patterns and work out addresses/banks
+		; HL now pointing to pattern data
+		ld		(ModChannelData),hl
+		inc		b						; now loop over all the patterns and work out addresses/banks
 	
-	; work out size of channel
-	ld		a,(ModNumChan)
-	ld		e,a
-	ld		d,4						; 4*1,2,3,4,5,6,7 or 8 
-	mul
-	ld		d,64					; then *64 for all the notes in this sequence
-	mul
-	ld		(ModSequenceSize),de
+		; work out size of channel
+		ld		a,(ModNumChan)
+		ld		e,a
+		ld		d,4						; 4*1,2,3,4,5,6,7 or 8 
+		mul
+		ld		d,64					; then *64 for all the notes in this sequence
+		mul
+		ld		(ModSequenceSize),de
 
 
-	; ----------------------------------------------------------------------------------------
-	; work out start bank+offset of each sequence start address	
-	; ----------------------------------------------------------------------------------------
+		; ----------------------------------------------------------------------------------------
+		; work out start bank+offset of each sequence start address	
+		; ----------------------------------------------------------------------------------------
 CalcSeqStartAdd:
-	ld		ix,ModSequenceData
-	ld		a,(ModBaseBank)
-	ld		c,a						; c = bank, hl = offset
+		ld		ix,ModSequenceData
+		ld		a,(ModBaseBank)
+		ld		c,a						; c = bank, hl = offset
 
-	; turn H into an offset, and C holds the bank
+		; turn H into an offset, and C holds the bank
 @AllChannels:
-	ld		a,h
-	and		$1f
-	ld		h,a
-	ld		(ix+0),l
-	ld		(ix+1),h
-	ld		(ix+2),c
+		ld		a,h
+		and		$1f
+		ld		h,a
+		ld		(ix+0),l
+		ld		(ix+1),h
+		ld		(ix+2),c
 
-	add		hl,de
-	bit		5,h
-	jr		z,@SkipBankSwap
-	inc		c
+		add		hl,de
+		bit		5,h
+		jr		z,@SkipBankSwap
+		inc		c
 @SkipBankSwap:
-	inc		ix
-	inc		ix
-	inc		ix
-	djnz	@AllChannels
+		inc		ix
+		inc		ix
+		inc		ix
+		djnz	@AllChannels
 	
 
 
-	; ----------------------------------------------------------------------------------------
-	; Now work out the start and bank of all SAMPLES
-	; also convert all samples to unsigned (and pre-scale)
-	; ----------------------------------------------------------------------------------------
+		; ----------------------------------------------------------------------------------------
+		; Now work out the start and bank of all SAMPLES
+		; also convert all samples to unsigned (and pre-scale)
+		; ----------------------------------------------------------------------------------------
 ModReadSamples:
-	; HL now points to SAMPLE data (offset), while C is the bank
-	ld		ix,ModSamples
-	ld		a,(ModNumInst)
-	ld		b,a
+		; HL now points to SAMPLE data (offset), while C is the bank
+		ld		ix,ModSamples
+		ld		a,(ModNumInst)
+		ld		b,a
 
 AllChannels2:
-	ld		a,h
-	and		$1f
-	ld		h,a
-	ld		(ix+sample_offset),l
-	ld		(ix+(sample_offset+1)),h
-	ld		a,c
-	ld		(ix+sample_bank),c
+		ld		a,h
+		and		$1f
+		ld		h,a
+		ld		(ix+sample_offset),l
+		ld		(ix+(sample_offset+1)),h
+		ld		a,c
+		ld		(ix+sample_bank),c
 
-	ld		e,(ix+sample_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
-	ld		d,(ix+(sample_len+1))
-	add		hl,de
+		push	hl
+		push	bc
 
-	ld		a,h
-	swapnib							; swap from $1f to $f1
-	and		$0e						; now mask to keep $0e
-	rrca							; /2 and get number of banks  (lower bit is 0)
-	add		a,c
-	ld		c,a
+		; work out the start of the repeat section - and bank
+		ld		e,(ix+sample_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
+		ld		d,(ix+(sample_len+1))
+		ld		a,d
+		and		a
+		jr		nz,@LoopSample
+		ld		a,e
+		cp		1
+		jr		nc,@LoopSample
+		xor		a	
+		ld		(ix+sample_len),a				; get sample length (we can only deal with sample lengths of 65534 and less)
+		ld		(ix+(sample_len+1)),a
+		ld		(ix+sample_rep_bank),a
+		ld		(ix+sample_rep),a
+		ld		(ix+(sample_rep+1)),a
+		jr		@NoRepeat		
 
-	ld		a,(ModInitSamples)
-	and		a
-	jr		z,DontInitSamples
+@LoopSample:
+		ld		e,(ix+sample_rep)
+		ld		d,(ix+(sample_rep+1))
+		add		hl,de							; add to base of sample
+		ld		a,h
+		swapnib
+		rrca							
+		add		a,c								; workout the repeat bank
+		ld		(ix+sample_rep_bank),a
+		ld		a,h
+		and		$1f
+		ld		h,a
+		ld		(ix+sample_rep),l
+		ld		(ix+(sample_rep+1)),h	
+		pop		bc
+		pop		hl
 
-	; Now convert the sample into unsigned and pre-scale it
-	exx
-	ld		l,(ix+sample_offset)
-	ld		h,(ix+(sample_offset+1))
-	add		hl,MOD_ADD
-	ld		a,(ix+sample_bank)
-	NextReg	MOD_BANK,a
-	ex		af,af'
-	ld		c,(ix+sample_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
-	ld		b,(ix+(sample_len+1))
-	ld		a,c
-	or		b
-	jr		z,@EmptySample
+
+		; Work out the address of the NEXT sample
+@NoRepeat
+		ld		e,(ix+sample_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
+		ld		d,(ix+(sample_len+1))
+		add		hl,de
+		ld		a,h
+		swapnib							; swap from $1f to $f1
+		and		$0e						; now mask to keep $0e
+		rrca							; /2 and get number of banks  (lower bit is 0)
+		add		a,c
+		ld		c,a
+
+
+
+		ld		a,(ModInitSamples)
+		and		a
+		jr		z,DontInitSamples
+
+		; Now convert the sample into unsigned and pre-scale it
+		exx
+		ld		l,(ix+sample_offset)
+		ld		h,(ix+(sample_offset+1))
+		add		hl,MOD_ADD
+		ld		a,(ix+sample_bank)
+		NextReg	MOD_BANK,a
+		ex		af,af'
+		ld		c,(ix+sample_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
+		ld		b,(ix+(sample_len+1))
+		ld		a,c
+		or		b
+		jr		z,@EmptySample
 @DoAllSample:
-	ld		a,(hl)
-	sra		a
-	sra		a
-	;add		$80
-	;srl		a
-	;srl		a
-	ld		(hl),a
-	inc		hl
+		ld		a,(hl)
+		sra		a
+		sra		a
+		;add		$80
+		;srl		a
+		;srl		a
+		ld		(hl),a
+		inc		hl
 
-	ld		a,h
-	cp		Hi(MOD_ADD+$2000)
-	jr		nz,@NotNextBank
-	;		swap bank
-	add		hl,-$2000	
-	ex		af,af'
-	inc		a
-	NextReg	MOD_BANK,a
-	ex		af,af'
+		ld		a,h
+		cp		Hi(MOD_ADD+$2000)
+		jr		nz,@NotNextBank
+		;		swap bank
+		add		hl,-$2000	
+		ex		af,af'
+		inc		a
+		NextReg	MOD_BANK,a
+		ex		af,af'
 	
 @NotNextBank:
-	add		bc,-1
-	ld		a,b
-	or		c
-	jr		nz,@DoAllSample
+		add		bc,-1
+		ld		a,b
+		or		c
+		jr		nz,@DoAllSample
 @EmptySample
-	exx
+		exx
 
 
 
 DontInitSamples:
-	ld		de,sample_info_len			; move to next sample
-	add		ix,de
-	djnz	AllChannels2
+		ld		de,sample_info_len			; move to next sample
+		add		ix,de
+		dec		b
+		jp		nz,AllChannels2
 	
 
-	; ----------------------------------------------------------------------------------------
-	; clear playback buffer
-	; ----------------------------------------------------------------------------------------
-	ld		b,SamplesPerFrame*2
-	ld		hl,ModSamplePlayback
+		; ----------------------------------------------------------------------------------------
+		; clear playback buffer
+		; ----------------------------------------------------------------------------------------
+		ld		b,SamplesPerFrame*2
+		ld		hl,ModSamplePlayback
+		ld		a,$80
 @ClearSample:
-	xor		a
-	ld		(hl),a
-	djnz	@ClearSample
+		ld		(hl),a
+		djnz	@ClearSample
 
-	ret
+		ret
 
 ; ********************************************************************************************
 ; Detect the number of samples and channels in the file - normally 31 inst, 4 channels
@@ -360,58 +407,58 @@ DontInitSamples:
 ; Out: A  = num instruments
 ; ********************************************************************************************
 ModGetInstrumentsChannels:
-	push	ix
-	call	FindID
-	pop	ix
-	and		a
-	jr		z,@Inst15		; 15 instruments in file
-	ld		(ModNumChan),a
-	ld		a,31
-	ld		(ModNumInst),a
-	ret
+		push	ix
+		call	FindID
+		pop	ix
+		and		a
+		jr		z,@Inst15		; 15 instruments in file
+		ld		(ModNumChan),a
+		ld		a,31
+		ld		(ModNumInst),a
+		ret
 @Inst15:
-	ld		a,4
-	ld		(ModNumChan),a
-	ld		a,15
-	ld		(ModNumInst),a
-	ret
+		ld		a,4
+		ld		(ModNumChan),a
+		ld		a,15
+		ld		(ModNumInst),a
+		ret
 
 ; ********************************************************************************************
 ; Find the IDs that we support (nothing over 8 channels coz... that's nuts)
 ; ********************************************************************************************
 FindID:
-	ld		hl,ModIDs
+		ld		hl,ModIDs
 
 @CheckAll:	
-	push	hl
-	push	ix
-	ld		a,(hl)
-	and		a			; end of list?
-	jr		z,@ExitNoneFound
-	ret		z
+		push	hl
+		push	ix
+		ld		a,(hl)
+		and		a			; end of list?
+		jr		z,@ExitNoneFound
+		ret		z
 
-	ld		b,4
+		ld		b,4
 @CheckLetters:
-	ld		a,(hl)
-	ld		d,(ix+0)
-	cp		d
-	jr		nz,@Next
-	inc		hl
-	inc		ix
-	djnz	@CheckLetters
-	ld		a,(hl)		; get number of channels
+		ld		a,(hl)
+		ld		d,(ix+0)
+		cp		d
+		jr		nz,@Next
+		inc		hl
+		inc		ix
+		djnz	@CheckLetters
+		ld		a,(hl)		; get number of channels
 @ExitNoneFound:
-	pop		ix
-	pop		hl
-	ret
+		pop		ix
+		pop		hl
+		ret
 
 @Next:
-	pop		ix
-	pop		hl
-	add		hl,5
-	jr		@CheckAll
-	xor		a
-	ret
+		pop		ix
+		pop		hl
+		add		hl,5
+		jr		@CheckAll
+		xor		a
+		ret
 
 
 ; ********************************************************************************************
@@ -501,11 +548,14 @@ SetUpSequence:
 
 
 ; ********************************************************************************************
-; Generate note table
-; DE = Frequency
+; Function:	Generate note table based on desired frequency
+;			NOTE: this will take several frames to run
+;
+; In:		hl = Frequency  (BytesPerFrame*TVRefresh)
+;
 ; ********************************************************************************************
 GenerateNoteTable:
-		ld		(Mod_table_freq),de
+		ld		(Mod_table_freq),hl
 		ld		bc,4095
 		ld		hl,NoteLookup+(4095*2)
 
@@ -540,17 +590,22 @@ GenerateNoteTable:
 		jr		nz,@BuildAll
 		ret
 
-Mod_table_freq	dw	0
 
-
+; ********************************************************************************************
+;	Include the rest of the MOD player
+; ********************************************************************************************
 
 		include	"mod_tick.asm"
 		include	"mod_misc.asm"
 		include	"mod_effect.asm"
 		include	"mod_data.asm"
 NoteLookup:		
-		incbin	"note_table.dat"			; MOD->PAL->SampleRate conversion
+		incbin	"note_table.dat"			; MOD->PAL->SampleRate conversion (8K table)
 
+		; ------------------------------------------------------------------------------------------------
+		; the MOD volumes must be bank aligned as they are paged in and "D" points to the base, 
+		; while E is the sample byte to scale to the desired volume
+		; ------------------------------------------------------------------------------------------------
 		Seg		MOD_VOLUME	
 VolumeTable:
 		incbin	"mod_volume.dat"			; sample*volume conversion

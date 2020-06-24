@@ -201,6 +201,10 @@ DoSamples:
 
 
 CopyAllChannels:
+		ld		a,SamplesPerFrame
+		ld		(ModSamplesToFill),a
+
+
 		; get sample address, if 0... no sample playing
 		ld		e,(ix+note_sample_cur)
 		ld		d,(ix+(note_sample_cur+1))	
@@ -246,7 +250,7 @@ WorkOutLength:
 		jr		nc,@LoopMore
 
 		; Now we know how many samples we went beyond the end, subtract that off....
-		ld		a,SamplesPerFrame
+		ld		a,(ModSamplesToFill)
 		sub		b	
 		ld		(ModSampleCopySize),a
 		ld		b,a									; b = number of bytes to copy
@@ -325,6 +329,9 @@ CopyLoop:
 		ld		a,(ModSampleCopySize)		; is the copy size the same as samples per frame?
 		cp		SamplesPerFrame				; if not, we didn't copy a whole frame, so sample has ended
 		jr		z,@NotSampleEnd
+		ld		a,(ix+note_sample_repb)
+		ld		l,(ix+note_sample_rep)
+		ld		h,(ix+(note_sample_rep+1))
 		ld		hl,0						; check for repeating samples here.....
 		jp		@NoBankSwap
 @NotSampleEnd:
@@ -361,17 +368,7 @@ NoSampleToCopy:
 ;   Scale sample buffer down for "raw" buffer playback
 ;------------------------------------------------------------------
 SkipSampleEnd:
-
-;		ld		hl,(ModDestbuffer)
-;		ld		b,SamplesPerFrame
-;UnsignBuffer:
-;		ld		a,(hl)
-;		add		a,$80
-;		ld		(hl),a
-;		inc		l
-;		djnz	UnsignBuffer
-
-		jp		RestoreMMUs
+		jp		RestoreMMUs			; comment out to record sample to memory (DEBUG)
 
 		
 		; DEBUG - record sample into memory
@@ -435,7 +432,7 @@ SetupNote:
 		; Do we want to skip the sample setup? 
 		ex		af,af'
 		and		a
-		jr		nz,@SkipSampleSetup
+		jr		nz,WorkOutSampleLengthDelta
 		;
 		; Now we've read the note, find the base address and bank of the sample
 		;
@@ -467,13 +464,18 @@ SetupNote:
 		ld		(ix+note_sample_length),e
 		ld		(ix+(note_sample_length+1)),d
 	
+		;ld		a,(ix+note_sample_repb)
+		;ld		l,(ix+note_sample_rep)
+		;ld		h,(ix+(note_sample_rep+1))
+
+
 		ld		a,(iy+sample_vol)
 		ld		(ix+note_volume_sample),a
 		call	UpdateChennelVolume
 
 		
-@SkipSampleSetup
 		; work out how many bytes we skip in the sample each frame
+WorkOutSampleLengthDelta:
 		push	hl
 		ld		e,(ix+note_sample_delta)
 		ld		d,(ix+(note_sample_delta+1))
