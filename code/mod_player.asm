@@ -303,17 +303,17 @@ AllChannels2:
 		push	bc
 
 		; work out the start of the repeat section - and bank
-		ld		e,(ix+sample_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
-		ld		d,(ix+(sample_len+1))
+		ld		e,(ix+sample_rep_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
+		ld		d,(ix+(sample_rep_len+1))
 		ld		a,d
 		and		a
-		jr		nz,@LoopSample
+		jr		nz,@LoopSample					; if repeat length >1, then we have a repeat 
 		ld		a,e
 		cp		1
 		jr		nc,@LoopSample
 		xor		a	
-		ld		(ix+sample_len),a				; get sample length (we can only deal with sample lengths of 65534 and less)
-		ld		(ix+(sample_len+1)),a
+		ld		(ix+sample_rep_len),a			; get sample length (we can only deal with sample lengths of 65534 and less)
+		ld		(ix+(sample_rep_len+1)),a
 		ld		(ix+sample_rep_bank),a
 		ld		(ix+sample_rep),a
 		ld		(ix+(sample_rep+1)),a

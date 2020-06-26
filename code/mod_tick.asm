@@ -93,6 +93,8 @@ ReadAllChannelNotes:
 		ld		a,(hl)
 		ld		(ix+note_effect),a			; effect high
 		inc		hl							; next note	
+		push	hl
+
 		ld		e,a
 		or		d
 		jr		z,GetNote
@@ -136,6 +138,7 @@ NoPitchBending:
 
 		ld		de,note_size
 		add		ix,de
+		pop		hl
 		pop		bc
 		dec		b
 		jp		nz,ReadAllChannelNotes
@@ -312,7 +315,7 @@ CopyLoop:
 		add		a,c					; sets carry for high op
 		adc		hl,de				; add address to upper delta + carry
 		ex		af,	af'				; get byte back - and save fraction
-		exx							; get dest address		
+		exx							; get dest address back		
 		; now accumulate sample into buffer
 		ld		e,a					; get index into volume table
 		ld		a,(de)				; get converted volume
@@ -328,18 +331,38 @@ CopyLoop:
 		exx
 		ld		a,(ModSampleCopySize)		; is the copy size the same as samples per frame?
 		cp		SamplesPerFrame				; if not, we didn't copy a whole frame, so sample has ended
-		jr		z,@NotSampleEnd
-		;ld		a,(ix+note_sample_repb)
-		;ld		l,(ix+note_sample_rep)
-		;ld		h,(ix+(note_sample_rep+1))
+		jr		z,NotSampleEnd
+
+		; does this sample repeat?
+		ld		a,(ix+sample_rep_bank)
+		and		a
+		jp		z,NotRepeatingSample
+
+		; setup the new length
+		ld		a,(ix+note_sample_replen)
+		ld		(ix+note_sample_length),a
+		ld		a,(ix+(note_sample_replen+1))
+		ld		(ix+(note_sample_length+1)),a
+
+		; set up new sample address (repeat offset and bank)
+		ld		a,(ix+note_sample_rep)
+		ld		(ix+note_sample_cur),a
+		ld		a,(ix+(note_sample_rep+1))
+		ld		(ix+(note_sample_cur+1)),a
+		ld		a,(ix+note_sample_repb)
+		ld		(ix+note_sample_curb),a
+		jp		NotSampleEnd
+
+
+NotRepeatingSample:
 		ld		hl,0						; check for repeating samples here.....
-		jp		@NoBankSwap
-@NotSampleEnd:
+		jp		NoBankSwap
+NotSampleEnd:
 		; check to see if we've crossed a bank
 		ld		a,h
 		sub		Hi(MOD_ADD)
 		and		$e0
-		jr		z,@NoBankSwap
+		jr		z,NoBankSwap
 
 		ld		a,h							; reset bank offset
 		and		$1f
@@ -349,7 +372,7 @@ CopyLoop:
 		inc		a
 		ld		(ix+note_sample_curb),a
 
-@NoBankSwap:
+NoBankSwap:
 		ld		(ix+note_sample_cur),l
 		ld		(ix+(note_sample_cur+1)),h
 		exx
@@ -464,9 +487,20 @@ SetupNote:
 		ld		(ix+note_sample_length),e
 		ld		(ix+(note_sample_length+1)),d
 	
-		;ld		a,(ix+note_sample_repb)
-		;ld		l,(ix+note_sample_rep)
-		;ld		h,(ix+(note_sample_rep+1))
+
+		; copy repeat start offset and bank
+		ld		a,(iy+sample_rep_bank)
+		ld		(ix+note_sample_repb),a
+		ld		a,(iy+sample_rep)
+		ld		(ix+note_sample_rep),a
+		ld		a,(iy+(sample_rep+1))
+		ld		(ix+(note_sample_rep+1)),a
+
+		; copy repeat length
+		ld		a,(iy+sample_rep_len)
+		ld		(ix+note_sample_replen),a
+		ld		a,(iy+(sample_rep_len+1))
+		ld		(ix+(note_sample_replen+1)),a
 
 
 		ld		a,(iy+sample_vol)

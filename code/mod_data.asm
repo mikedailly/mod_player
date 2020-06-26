@@ -55,6 +55,7 @@ note_sample_repb	rb	1		; base bank of repeat for sample
 note_sample_cur		rw	1		; CURRENT offset address
 note_sample_curb	rb	1		; CURRENT bank address
 note_sample_delta	rw	1		; sample delta
+note_sample_replen	rw	1		; Repeat length
 note_sample_length	rw	1		; Current length to still play
 note_sample_lengthF	rb	1		; Current length to still play fraction
 note_length_delta	rw	1		; number of bytes copied each frame
