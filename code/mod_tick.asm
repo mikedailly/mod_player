@@ -269,8 +269,9 @@ WorkOutLength:
 		ld		(ix+(note_sample_length+1)),h
 		ld		a,SamplesPerFrame
 		ld		(ModSampleCopySize),a
+		exx		
 		ld		b,a
-
+		exx
 
 
 SampCopy
@@ -286,9 +287,6 @@ SampCopy
 		add		a,MOD_VOL_ADD
 		ld		d,a								; d = volume table to use		
 
-
-
-
 		;ld		hl,ModAccumulationBuffer
 		ld		hl,(ModDestbuffer)
 		exx
@@ -300,43 +298,57 @@ SampCopy
 		ld		c,(ix+note_sample_delta)
 		xor		a								; clear fractional accumulator
 		ex		af,	af'
-		exx		
 
 
 		; -----------------------------------------------------------------------------------------------
 		; This loop is used for all other channels, and mixes into the buffer
 		; -----------------------------------------------------------------------------------------------
 CopyLoop:
-		; Resample sample into correct frequency AND output frequency.
-		; DE.C = sample delta.  HL.A = sample address and fraction
-		exx							; swap in source address and fractional deltas
-		ld		a,(hl)				; read sample
-		ex		af,	af'				; swap byte for delta fraction
-		add		a,c					; sets carry for high op
-		adc		hl,de				; add address to upper delta + carry
-		ex		af,	af'				; get byte back - and save fraction
-		exx							; get dest address back		
-		; now accumulate sample into buffer
+		; get byte from sample
+		ld		a,(hl)				; read sample byte
+		exx							; swap to output buffer
 		ld		e,a					; get index into volume table
 		ld		a,(de)				; get converted volume
 		add		a,(hl)				; mix into buffer
-		ld		(hl),a
-		inc		hl
-		djnz	CopyLoop			; Build up a frames worth
+		ld		(hl),a				; store mixed sample value into buffer
+		inc		l					; pages are always 256 byte aligned - so will never cross a page
+		exx							; swap back to sample 
+		
+		; Resample sample into correct frequency AND output frequency.
+		; DE.C = sample delta.  HL.A = sample address and fraction
+		ex		af,	af'				; get delta fraction back
+		add		a,c					; sets carry for high op
+		adc		hl,de				; add address to upper delta + carry
+		ex		af,	af'				; and save fraction
+
+		; check for sample loops - once address goes past sample END address
+;		ld		a,$78				; 7	End of sample LO (or end of repeat section LO)
+;		sub		l					; 4 subtract current location
+;		ld		a,$57				; 7	End of sample HI (or end of repeat section HI)
+;		sbc		a,h					; 4
+;		jp		nc,@NoRepeat		; 10 = 32		 normally takes branch, so don't use JR, JP is quicker
+;		nop
+;		nop
+;		nop
+;		nop
+;
+;@NoRepeat:
+		; now accumulate sample into buffer
+		djnz	CopyLoop
 		; -----------------------------------------------------------------------------------------------
 		; End copy loop
 		; -----------------------------------------------------------------------------------------------
 
 
-		exx
 		ld		a,(ModSampleCopySize)		; is the copy size the same as samples per frame?
 		cp		SamplesPerFrame				; if not, we didn't copy a whole frame, so sample has ended
 		jr		z,NotSampleEnd
 
 		; does this sample repeat?
-		ld		a,(ix+sample_rep_bank)
-		and		a
-		jp		z,NotRepeatingSample
+;		ld		a,(ix+sample_rep_bank)
+;		and		a
+;		jp		z,NotRepeatingSample
+		jp		NotRepeatingSample
 
 		; setup the new length
 		ld		a,(ix+note_sample_replen)
