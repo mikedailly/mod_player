@@ -617,6 +617,7 @@ GenerateNoteTable:
 ; ********************************************************************************************
 
 		include	"mod_tick.asm"
+		include	"mod_norepeat.asm"
 		include	"mod_misc.asm"
 		include	"mod_effect.asm"
 		include	"mod_data.asm"

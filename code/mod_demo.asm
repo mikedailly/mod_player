@@ -117,8 +117,8 @@ ModFile:
 ;		incbin	"MATKAMIE.mod"
 ;		incbin	"abandon_2_0.mod"
 ;		incbin	"test2.mod"
-		incbin	"blood_money_title.mod"	
-;		incbin	"axelf.mod"
+;		incbin	"blood_money_title.mod"	
+		incbin	"axelf.mod"
 
 ; *****************************************************************************************************************************
 ; save
