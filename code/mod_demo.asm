@@ -75,6 +75,24 @@ WaitVBlank:
  		call    ReadKeyboard
 
 
+
+		NextReg	$52,10
+		NextReg	$53,11
+
+
+		ld		a,(ModPatternIndex)
+		push	hl
+		push	de
+		push	bc
+		push	af
+		ld		de,$4001
+		call	PrintHex
+		pop		af
+		pop		bc
+		pop		de
+		pop		hl
+
+
 ;		nextreg $4a,%11111111
     	ld      a,1
     	out     ($fe),a 
@@ -117,8 +135,8 @@ ModFile:
 ;		incbin	"MATKAMIE.mod"
 ;		incbin	"abandon_2_0.mod"
 ;		incbin	"test2.mod"
-;		incbin	"blood_money_title.mod"	
-		incbin	"axelf.mod"
+		incbin	"blood_money_title.mod"	
+;		incbin	"axelf.mod"
 
 ; *****************************************************************************************************************************
 ; save

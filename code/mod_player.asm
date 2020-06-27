@@ -126,6 +126,9 @@ SizeNotFound
 @FoundSize:
 		ret
 
+; ********************************************************************************************
+;	Wait for raster $30
+; ********************************************************************************************
 WaitForRasterPos:
 		call	ReadRaster
 		xor		a
@@ -209,8 +212,6 @@ ModLoad:
 		ld		(ModSongRestart),a		; 1 to 128
 		inc		hl
 		inc		hl
-		;ld		(ModSequanceOrder),hl			; get the base of the sequence order
-		;ld		(ModSequanceOrder_current),hl	; and store current position
 CopyPattern
 		; detect largest pattern number
 		xor		a
@@ -618,6 +619,7 @@ GenerateNoteTable:
 
 		include	"mod_tick.asm"
 		include	"mod_norepeat.asm"
+		include	"mod_repeating.asm"
 		include	"mod_misc.asm"
 		include	"mod_effect.asm"
 		include	"mod_data.asm"

@@ -157,8 +157,14 @@ NoPitchBending:
 		jr		nz,DoSamples
 
 		; end of sequence.... move to next pattern
+		ld		a,(ModSongLength)
+		ld		l,a
 		ld		a,(ModPatternIndex)
 		inc		a
+		cp		l
+		jr		nz,@NotEnd
+		xor		a							; restart MOD
+@NotEnd:
 		ld		(ModPatternIndex),a
 		ld		de,ModPattern
 		add		de,a
@@ -230,7 +236,8 @@ CopyAllChannels:
 		NextReg	MOD_BANK+1,a
 		exx							; DE now hold sample address (in alt set)
 			
-		call	NonRepeatingSampleCopy
+		;call	NonRepeatingSampleCopy
+		call	RepeatingSampleCopy
 
 		ld		a,h
 		or		l

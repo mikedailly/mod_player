@@ -1,4 +1,4 @@
-NonRepeatingSampleCopy:
+RepeatingSampleCopy:
 
 		;------------------------------------------------------------------
 		;	NON-Looping copy
@@ -40,7 +40,7 @@ WorkOutLength:
 		ld		(ix+note_sample_lengthF),a
 		ld		(ix+note_sample_length),a
 		ld		(ix+(note_sample_length+1)),a
-		jp		SampCopy
+		jp		SampCopy2
 @fullcopy:
 		ld		(ix+note_sample_lengthF),a
 		ld		(ix+note_sample_length),l
@@ -52,7 +52,7 @@ WorkOutLength:
 		exx
 
 
-SampCopy
+SampCopy2
 		ld		a,ModVolumeBank
 		NextReg	MOD_VOL_BANK,a					; bank over the ROM area
 		inc		a
@@ -85,7 +85,7 @@ SampCopy
 		; -----------------------------------------------------------------------------------------------
 		; This loop is used for all other channels, and mixes into the buffer
 		; -----------------------------------------------------------------------------------------------
-CopyLoop:
+CopyLoop2:
 		; get byte from sample
 		ld		a,(hl)				; read sample byte
 		exx							; swap to output buffer
@@ -116,7 +116,7 @@ CopyLoop:
 
 @NoRepeat:
 		; now accumulate sample into buffer
-		djnz	CopyLoop
+		djnz	CopyLoop2
 		; -----------------------------------------------------------------------------------------------
 		; End copy loop
 		; -----------------------------------------------------------------------------------------------

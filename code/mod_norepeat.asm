@@ -34,9 +34,9 @@ WorkOutLength1:
 		; Now we know how many samples we went beyond the end, subtract that off....
 		ld		a,(ModSamplesToFill)
 		sub		b	
-		and		a
+		and		a									; won't happen much... but now and then we'll have nothing to play
 		jr		z,EndOfSample
-		ld		(ModSampleCopySize),a		
+		ld		(ModSampleCopySize),a
 		ld		b,a									; b = number of bytes to copy
 		jp		SampCopy
 @fullcopy:
