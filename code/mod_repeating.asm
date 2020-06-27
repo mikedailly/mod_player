@@ -3,53 +3,21 @@ RepeatingSampleCopy:
 		;------------------------------------------------------------------
 		;	NON-Looping copy
 		;------------------------------------------------------------------
-WorkOutLength:
-		; work out number of bytes to copy
-		ld		a,(ix+note_sample_lengthF)				; current sample position (16.8)
-		ld		l,(ix+note_sample_length)
-		ld		h,(ix+(note_sample_length+1))
-
-		ld		c,(ix+note_length_deltaF)				; frame length delta  (16.8)
-		ld		e,(ix+note_length_delta)
-		ld		d,(ix+(note_length_delta+1))
-		sub		c
-		sbc		hl,de
-		jr		nc,@fullcopy
-
-		; if we get here we don't have enough bytes to fill a frame.
-		; So work out how many bytes we DO need to process... (add delta back onto negative length value until >0)
-		ld		b,0
-		ld		e,(ix+(note_sample_delta+1))			
-		ld		c,(ix+(note_sample_delta))
-		ld		d,0
-@LoopMore
-		inc		b
-		add		a,c
-		adc		hl,de
-		jr		nc,@LoopMore
-
-		; Now we know how many samples we went beyond the end, subtract that off....
-		ld		a,(ModSamplesToFill)
-		sub		b	
-		ld		(ModSampleCopySize),a
-		exx
-		ld		b,a									; b = number of bytes to copy
-		exx
-
-		xor		a			
-		ld		(ix+note_sample_lengthF),a
-		ld		(ix+note_sample_length),a
-		ld		(ix+(note_sample_length+1)),a
-		jp		SampCopy2
-@fullcopy:
-		ld		(ix+note_sample_lengthF),a
-		ld		(ix+note_sample_length),l
-		ld		(ix+(note_sample_length+1)),h
+WorkOutLength2:
 		ld		a,SamplesPerFrame
 		ld		(ModSampleCopySize),a
 		exx
 		ld		b,a
 		exx
+
+
+		ld		a,(ix+note_sample_end)
+		ld		(EndAddLow+1),a
+		ld		a,(ix+(note_sample_end+1))
+		add		a,Hi(MOD_ADD)
+		ld		(EndAddHi+1),a
+		;ld		a,(ix+sample_rep_bank)		
+		;ld		(ix+sample_end_bank),h
 
 
 SampCopy2
@@ -104,16 +72,36 @@ CopyLoop2:
 		ex		af,	af'				; and save fraction
 
 		; check for end of sample or sample loops - once address goes past sample END address 
+EndAddLow:
 		ld		a,$78				; 7	End of sample LO (or end of repeat section LO)
 		sub		l					; 4 subtract current location
+EndAddHi:
 		ld		a,$57				; 7	End of sample HI (or end of repeat section HI)
 		sbc		a,h					; 4
 		jp		nc,@NoRepeat		; 10 = 32		 normally takes branch, so don't use JR, JP is quicker
-		nop
-		nop
-		nop
-		nop
+		push	de
 
+		ld		a,(EndAddLow+1)
+		ld		e,a
+		ld		a,(EndAddHi+1)
+		ld		d,a
+		xor		a
+		sbc		hl,de				; subtract the end address from the current sample addredss
+		ex		de,hl				; to get number of bytes PAST the end of the sample.
+
+		ld		l,(ix+note_sample_rep)			; get repeat point
+		ld		a,(ix+(note_sample_rep+1))
+		add		a,Hi(MOD_ADD)
+		ld		h,a
+		add		hl,de							; HL now = the repeat point
+		ld		a,(ix+note_sample_repb)
+		ld		(ix+note_sample_curb),a
+		NextReg	MOD_VOL_BANK,a					; bank over the ROM area
+		inc		a
+		NextReg	MOD_VOL_BANK+1,a
+
+
+		pop		de
 @NoRepeat:
 		; now accumulate sample into buffer
 		djnz	CopyLoop2

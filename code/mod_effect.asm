@@ -53,7 +53,7 @@ Effect14Jump:
 PitchBendUp:
 		ld		(ix+note_pitch_bend),e
 		xor		a
-		ld		(ix+(note_pitch_bend+1)),e
+		ld		(ix+(note_pitch_bend+1)),a
 		jp		NoEffect
 
 ;------------------------------------------------------------------------------------------

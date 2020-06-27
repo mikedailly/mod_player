@@ -34,6 +34,8 @@ sample_vol			rb	1		; volume, range is $00 to $40
 sample_rep			rw	1		; repeat point
 sample_rep_bank		rb	1		; repeat point BANK
 sample_rep_len		rw	1		; repeat length
+sample_end			rw	1		; END point of sample (sometimes the end of ta repeat, rather than end of sample)
+sample_end_bank		rb	1		; END bank
 sample_offset		rw	1		; the offset into the bank for the actual sample data
 sample_bank			rb	1		; the start bank of the sample
 sample_info_len		rb	0
@@ -51,9 +53,11 @@ note_effect			rw	1		; 12 bit effect value
 note_sample_off		rw	1		; base address of sample
 note_sample_bank	rw	1		; base bank of sample
 note_sample_rep		rw	1		; base address of repeat for sample
-note_sample_repb	rb	1		; base bank of repeat for sample
+note_sample_repb	rb	1		; base bank of repeat for sample  (0 for no repeat)
 note_sample_cur		rw	1		; CURRENT offset address
 note_sample_curb	rb	1		; CURRENT bank address
+note_sample_end		rw	1		; END of sample - for repeates
+note_sample_endb	rb	1		; End of sample bank - for repeates
 note_sample_delta	rw	1		; sample delta
 note_sample_replen	rw	1		; Repeat length
 note_sample_length	rw	1		; Current length to still play

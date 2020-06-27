@@ -111,7 +111,7 @@ GetNote
 
 		xor		a
 		call	SetupNote
-
+		jp		SkipEffects
 
 NextNote:
 
@@ -136,6 +136,9 @@ DoEffectProcessing
 			call	SetupNote
 NoPitchBending:
 
+
+
+SkipEffects:
 		ld		de,note_size
 		add		ix,de
 		pop		hl
@@ -235,13 +238,25 @@ CopyAllChannels:
 		inc		a
 		NextReg	MOD_BANK+1,a
 		exx							; DE now hold sample address (in alt set)
-			
-		;call	NonRepeatingSampleCopy
-		call	RepeatingSampleCopy
 
+
+
+
+CopyInSample
+		ld		a,(ix+note_sample_repb)
+		and		a
+		jr		nz,@RepeatingSample
+		call	NonRepeatingSampleCopy
+		jr		@SkipRepeat
+@RepeatingSample:
+		call	RepeatingSampleCopy
+@SkipRepeat:
 		ld		a,h
 		or		l
 		jp		z,NoBankSwap
+
+
+
 
 
 
@@ -273,7 +288,7 @@ NoSampleToCopy:
 		ld		a,(ModChannelCounter)
 		dec		a
 		ld		(ModChannelCounter),a
-		jp		nz,CopyAllChannels
+		;jp		nz,CopyAllChannels
 
 
 ;------------------------------------------------------------------
@@ -339,7 +354,7 @@ SetupNote:
 		inc		hl
 		ld		a,(hl)
 		ld		(ix+(note_sample_delta+1)),a
-		ex		de,hl
+		;ex		de,hl
 
 		; Do we want to skip the sample setup? 
 		ex		af,af'
@@ -391,6 +406,11 @@ SetupNote:
 		ld		a,(iy+(sample_rep_len+1))
 		ld		(ix+(note_sample_replen+1)),a
 
+		; copy END point (for repeats)
+		ld		a,(iy+sample_end)
+		ld		(ix+note_sample_end),a
+		ld		a,(iy+(sample_end+1))
+		ld		(ix+(note_sample_end+1)),a
 
 		ld		a,(iy+sample_vol)
 		ld		(ix+note_volume_sample),a

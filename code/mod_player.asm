@@ -176,21 +176,23 @@ ModLoad:
 
 		; volume adjust
 		ld		a,(ix+file_sample_vol)
-		cp		63
+		cp		64
 		jr		c,@SkipReset
-		ld		a,63
+		ld		a,64
 @SkipReset:
 		ld		(iy+sample_vol),a
 
 		; swap sample repeat point from amiga format
-		ld		a,(ix+file_sample_rep)		
-		ld		(iy+(sample_rep+1)),a
-		ld		a,(ix+(file_sample_rep+1))
-		ld		(iy+sample_rep),a
+		ld		h,(ix+file_sample_rep)		
+		ld		l,(ix+(file_sample_rep+1))
+		add		hl,hl
+		ld		(iy+sample_rep),l
+		ld		(iy+(sample_rep+1)),h
 
 		; swap sample repeat length  from amiga format
 		ld		h,(ix+file_sample_rep_len)		
 		ld		l,(ix+(file_sample_rep_len+1))
+		add		hl,hl
 		ld		(iy+sample_rep_len),l
 		ld		(iy+(sample_rep_len+1)),h
 
@@ -299,6 +301,7 @@ AllChannels2:
 		ld		(ix+(sample_offset+1)),h
 		ld		a,c
 		ld		(ix+sample_bank),c
+		ld		(ix+sample_rep_bank),c
 
 		push	hl
 		push	bc
@@ -310,8 +313,10 @@ AllChannels2:
 		and		a
 		jr		nz,@LoopSample					; if repeat length >1, then we have a repeat 
 		ld		a,e
-		cp		1
+		cp		2
 		jr		nc,@LoopSample
+
+		; This is a non-looping sample
 		xor		a	
 		ld		(ix+sample_rep_len),a			; get sample length (we can only deal with sample lengths of 65534 and less)
 		ld		(ix+(sample_rep_len+1)),a
@@ -324,7 +329,20 @@ AllChannels2:
 		ld		e,(ix+sample_rep)
 		ld		d,(ix+(sample_rep+1))
 		add		hl,de							; add to base of sample
+		
+		; while we're here.... work out the END of the sample - which is the end repeat point
+		push	hl
+		ld		e,(ix+sample_rep_len)			; Add on sample length
+		ld		d,(ix+(sample_rep_len+1))
+		add		hl,de							; add to base of sample
+		ld		(ix+sample_end),l
+		ld		(ix+(sample_end+1)),h
+		ld		a,(ix+sample_rep_bank)		
+		ld		(ix+sample_end_bank),a
+
+		pop		hl								; get the repeat point back
 		ld		a,h
+		and		$e0
 		swapnib
 		rrca							
 		add		a,c								; workout the repeat bank
