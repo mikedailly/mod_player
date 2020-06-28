@@ -22,8 +22,8 @@ file_sample_name		rb	22
 file_sample_len			rw	1		; length in words (*2=bytes)
 file_sample_fine		rb	1		; sample fine tune 0-7, +8-$f = -8 to -1
 file_sample_vol			rb	1		; volume, range is $00 to $40
-file_sample_rep			rw	1		; repeat point
-file_sample_rep_len		rw	1		; repeat length
+file_sample_rep			rw	1		; repeat point (upto 128k location)
+file_sample_rep_len		rw	1		; repeat length (3 bytes - 128K sample length BYTES 64k WORD)
 file_sample_info_len	rb	0
 
 
@@ -31,10 +31,10 @@ file_sample_info_len	rb	0
 sample_len			rb	3		; length in words (*2=bytes)
 sample_fine			rb	1		; sample fine tune 0-7, +8-$f = -8 to -1
 sample_vol			rb	1		; volume, range is $00 to $40
-sample_rep			rw	1		; repeat point
+sample_rep			rb	3		; repeat point
 sample_rep_bank		rb	1		; repeat point BANK
-sample_rep_len		rw	1		; repeat length
-sample_end			rw	1		; END point of sample (sometimes the end of ta repeat, rather than end of sample)
+sample_rep_len		rb	3		; repeat length
+sample_end			rb	3		; END point of sample (sometimes the end of ta repeat, rather than end of sample)
 sample_end_bank		rb	1		; END bank
 sample_offset		rw	1		; the offset into the bank for the actual sample data
 sample_bank			rb	1		; the start bank of the sample
@@ -54,14 +54,14 @@ note_sample_off		rw	1		; base address of sample
 note_sample_bank	rw	1		; base bank of sample
 note_sample_rep		rw	1		; base address of repeat for sample
 note_sample_repb	rb	1		; base bank of repeat for sample  (0 for no repeat)
-note_sample_cur		rw	1		; CURRENT offset address
-note_sample_curb	rb	1		; CURRENT bank address
+note_sample_cur		rw	1		; CURRENT address of sample playing
+note_sample_curb	rb	1		; CURRENT bank of sample playing
 note_sample_end		rw	1		; END of sample - for repeates
 note_sample_endb	rb	1		; End of sample bank - for repeates
 note_sample_delta	rw	1		; sample delta
 note_sample_replen	rw	1		; Repeat length
-note_sample_length	rw	1		; Current length to still play
-note_sample_lengthF	rb	1		; Current length to still play fraction
+note_sample_length	rb	3		; Current length still to play
+note_sample_lengthF	rb	1		; Current length fraction
 note_length_delta	rw	1		; number of bytes copied each frame
 note_length_deltaF	rb	1		; number of bytes copied each frame - fraction
 note_size			rb	0		; size of note

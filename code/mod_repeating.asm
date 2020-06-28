@@ -73,18 +73,20 @@ CopyLoop2:
 
 		; check for end of sample or sample loops - once address goes past sample END address 
 EndAddLow:
-		ld		a,$78				; 7	End of sample LO (or end of repeat section LO)
+		ld		a,$78				; 7	End of sample LO (self-modified code)
 		sub		l					; 4 subtract current location
 EndAddHi:
-		ld		a,$57				; 7	End of sample HI (or end of repeat section HI)
+		ld		a,$57				; 7	End of sample HI (self-modified code)
 		sbc		a,h					; 4
 		jp		nc,@NoRepeat		; 10 = 32		 normally takes branch, so don't use JR, JP is quicker
+		
+		; Now handle the repeat
 		push	de
-
 		ld		a,(EndAddLow+1)
 		ld		e,a
 		ld		a,(EndAddHi+1)
 		ld		d,a
+		inc		de					; offset by 1 to get proper value
 		xor		a
 		sbc		hl,de				; subtract the end address from the current sample addredss
 		ex		de,hl				; to get number of bytes PAST the end of the sample.
@@ -96,9 +98,9 @@ EndAddHi:
 		add		hl,de							; HL now = the repeat point
 		ld		a,(ix+note_sample_repb)
 		ld		(ix+note_sample_curb),a
-		NextReg	MOD_VOL_BANK,a					; bank over the ROM area
+		NextReg	MOD_BANK,a					; bank over the ROM area
 		inc		a
-		NextReg	MOD_VOL_BANK+1,a
+		NextReg	MOD_BANK+1,a
 
 
 		pop		de

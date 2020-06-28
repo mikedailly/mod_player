@@ -45,7 +45,6 @@ ReadAllChannelNotes:
 		ld		(ix+note_pitch_bend),a		; clear pitch bending
 		ld		(ix+(note_pitch_bend+1)),a
 
-
 		;
 		; read the 4 byte note
 		;
@@ -108,6 +107,9 @@ GetNote
 		ld		a,e
 		or		d
 		jp		z,NextNote
+
+		ld		a,$40
+		ld		(ix+note_volume_channel),a	; reset note volume
 
 		xor		a
 		call	SetupNote
@@ -288,7 +290,7 @@ NoSampleToCopy:
 		ld		a,(ModChannelCounter)
 		dec		a
 		ld		(ModChannelCounter),a
-		;jp		nz,CopyAllChannels
+		jp		nz,CopyAllChannels
 
 
 ;------------------------------------------------------------------
@@ -388,8 +390,10 @@ SetupNote:
 		ld		(ix+note_sample_lengthF),a
 		ld		e,(iy+sample_len)
 		ld		d,(iy+(sample_len+1))
+		ld		a,(iy+(sample_len+2))
 		ld		(ix+note_sample_length),e
 		ld		(ix+(note_sample_length+1)),d
+		ld		(ix+(note_sample_length+2)),a
 	
 
 		; copy repeat start offset and bank
@@ -405,6 +409,8 @@ SetupNote:
 		ld		(ix+note_sample_replen),a
 		ld		a,(iy+(sample_rep_len+1))
 		ld		(ix+(note_sample_replen+1)),a
+		ld		a,(iy+(sample_rep_len+2))
+		ld		(ix+(note_sample_replen+2)),a
 
 		; copy END point (for repeats)
 		ld		a,(iy+sample_end)

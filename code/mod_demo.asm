@@ -132,10 +132,12 @@ WaitVBlank:
 ModFile:
 ;		incbin	"8channel.xm"
 ;		incbin	"LIES.mod"
-		incbin	"MATKAMIE.mod"
+;		incbin	"MATKAMIE.mod"
+;		incbin	"TEST_MATKAMIE.mod"
 ;		incbin	"abandon_2_0.mod"
 ;		incbin	"test2.mod"
-;		incbin	"blood_money_title.mod"	
+		incbin	"blood_money_title.mod"	
+;		incbin	"blood_test.mod"
 ;		incbin	"axelf.mod"
 
 ; *****************************************************************************************************************************

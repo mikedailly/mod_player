@@ -163,12 +163,12 @@ ModLoad:
 		; swap sample length from amiga format
 		ld		h,(ix+file_sample_len)			; sample size in WORDS (*2 for bytes)
 		ld		l,(ix+(file_sample_len+1))
+		xor		a								; clear overflow
 		add		hl,hl
 		ld		(iy+sample_len),l
 		ld		(iy+(sample_len+1)),h
-		ld		a,0
-		adc		a,0
-		ld		(iy+(sample_len+2)),l
+		rla										; carry into bit 0 of A
+		ld		(iy+(sample_len+2)),a
 	
 		; fine tune
 		ld		a,(ix+file_sample_fine)
@@ -185,16 +185,22 @@ ModLoad:
 		; swap sample repeat point from amiga format
 		ld		h,(ix+file_sample_rep)		
 		ld		l,(ix+(file_sample_rep+1))
+		xor		a
 		add		hl,hl
 		ld		(iy+sample_rep),l
 		ld		(iy+(sample_rep+1)),h
+		rla
+		ld		(iy+(sample_rep+2)),a
 
-		; swap sample repeat length  from amiga format
+		; swap sample repeat length  from Amiga format
 		ld		h,(ix+file_sample_rep_len)		
 		ld		l,(ix+(file_sample_rep_len+1))
+		xor		a
 		add		hl,hl
 		ld		(iy+sample_rep_len),l
 		ld		(iy+(sample_rep_len+1)),h
+		rla										; carry into A
+		ld		(iy+(sample_rep_len+2)),a
 
 		ld		de,file_sample_info_len			; move to next sample
 		add		ix,de
@@ -334,6 +340,7 @@ AllChannels2:
 		push	hl
 		ld		e,(ix+sample_rep_len)			; Add on sample length
 		ld		d,(ix+(sample_rep_len+1))
+		dec		de
 		add		hl,de							; add to base of sample
 		ld		(ix+sample_end),l
 		ld		(ix+(sample_end+1)),h
@@ -437,9 +444,11 @@ DontInitSamples:
 @ClearSample:
 		ld		(hl),a
 		djnz	@ClearSample
-
-
 		ret
+
+
+
+
 
 ; ********************************************************************************************
 ; Detect the number of samples and channels in the file - normally 31 inst, 4 channels
@@ -548,6 +557,7 @@ InitAllChannels:
 		ld		(ix+(note_sample_off+1)),a
 		ld		(ix+note_sample_length),a
 		ld		(ix+(note_sample_length+1)),a
+		ld		(ix+(note_sample_length+2)),a
 		ld		(ix+note_sample_lengthF),a
 
 		ld		de,note_size
