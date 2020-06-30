@@ -1,7 +1,12 @@
 ;------------------------------------------------------------------
+; This loop is used if the sample repeats, It's much slower than the
+; non-repeating version. Ideally build loops into your samples 
+; if you can, things will run much faster.
+;
 ;	On entry
-;		MMU 2,3 = Sample banked in
+;		MMU 2,3 = Sample banked in  
 ;		DE		= base address of sample
+;
 ;------------------------------------------------------------------
 RepeatingSampleCopy:
 

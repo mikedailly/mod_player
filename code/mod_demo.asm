@@ -137,8 +137,8 @@ ModFile:
 ;		incbin	"abandon_2_0.mod"
 ;		incbin	"test2.mod"
 ;		incbin	"blood_money_title.mod"	
-		incbin	"blood_test.mod"
-;		incbin	"axelf.mod"
+;		incbin	"blood_test.mod"
+		incbin	"axelf.mod"
 
 ; *****************************************************************************************************************************
 ; save

@@ -74,6 +74,7 @@ TryDMAAgain:
 		; now read how far we got...
 		call	DMAReadLen		
 		
+		; debug
 		;push	hl
 		;push	hl
 		;ld		a,h
@@ -395,7 +396,7 @@ CalcSampleLoop:
 		sbc		0
 		ex		de,hl							; length now in  ADE
 		pop		hl								; restore base address of sample
-		push	hl
+		;push	hl
 
 		
 		add		hl,de							; add to base of sample

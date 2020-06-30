@@ -1,6 +1,11 @@
 ;------------------------------------------------------------------
 ; This loop is used if the sample doesn't repeat, as it's quite a bit quicker than
 ; doing a looping sample
+;
+; On Entry:
+;		MMU 2,3 = Sample banked in
+;		DE		= base address of sample
+;
 ;------------------------------------------------------------------
 NonRepeatingSampleCopy:
 
