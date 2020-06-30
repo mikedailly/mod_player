@@ -136,8 +136,8 @@ ModFile:
 ;		incbin	"TEST_MATKAMIE.mod"
 ;		incbin	"abandon_2_0.mod"
 ;		incbin	"test2.mod"
-		incbin	"blood_money_title.mod"	
-;		incbin	"blood_test.mod"
+;		incbin	"blood_money_title.mod"	
+		incbin	"blood_test.mod"
 ;		incbin	"axelf.mod"
 
 ; *****************************************************************************************************************************

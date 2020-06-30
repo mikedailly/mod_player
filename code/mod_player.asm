@@ -156,11 +156,15 @@ ModLoad:
 		call	ModGetInstrumentsChannels		; detect the number of instruments	
 
 
+
+		; ---------------------------------------------------------------------------------------------------------
+		; Get SAMPLE info
+		; ---------------------------------------------------------------------------------------------------------
 		ld		b,a
 		ld		ix,MOD_SAMPLES			; base of sample table
 		ld		iy,ModSamples			; sample structs
 @SetUpAllSamples:
-		; swap sample length from amiga format
+		; swap sample length from Amiga format
 		ld		h,(ix+file_sample_len)			; sample size in WORDS (*2 for bytes)
 		ld		l,(ix+(file_sample_len+1))
 		xor		a								; clear overflow
@@ -169,10 +173,12 @@ ModLoad:
 		ld		(iy+(sample_len+1)),h
 		rla										; carry into bit 0 of A
 		ld		(iy+(sample_len+2)),a
-	
+
+
 		; fine tune
 		ld		a,(ix+file_sample_fine)
 		ld		(iy+sample_fine),a
+
 
 		; volume adjust
 		ld		a,(ix+file_sample_vol)
@@ -182,7 +188,8 @@ ModLoad:
 @SkipReset:
 		ld		(iy+sample_vol),a
 
-		; swap sample repeat point from amiga format
+
+		; swap sample repeat point from Amiga format
 		ld		h,(ix+file_sample_rep)		
 		ld		l,(ix+(file_sample_rep+1))
 		xor		a
@@ -192,7 +199,8 @@ ModLoad:
 		rla
 		ld		(iy+(sample_rep+2)),a
 
-		; swap sample repeat length  from Amiga format
+
+		; swap sample repeat length from Amiga format
 		ld		h,(ix+file_sample_rep_len)		
 		ld		l,(ix+(file_sample_rep_len+1))
 		xor		a
@@ -202,14 +210,21 @@ ModLoad:
 		rla										; carry into A
 		ld		(iy+(sample_rep_len+2)),a
 
-		ld		de,file_sample_info_len			; move to next sample
+
+		; Move to the next sample in the file
+		ld		de,file_sample_info_len			; length of one sample block
 		add		ix,de
-		ld		de,sample_info_len			; move to next sample
+		ld		de,sample_info_len				; move to the next converted sample block
 		add		iy,de
 		djnz	@SetUpAllSamples
 
 
 
+
+
+		; ---------------------------------------------------------------------------------------------------------
+		; Get SONG info
+		; ---------------------------------------------------------------------------------------------------------
 
 		; ix points to song info... so put into hl
 		push	ix
@@ -246,10 +261,18 @@ CopyPattern
 		add		hl,4					; skip ID
 @NoID:
 
+
+
+
+		; ---------------------------------------------------------------------------------------------------------
+		; Work out pattern data
+		; ---------------------------------------------------------------------------------------------------------
+
 		; HL now pointing to pattern data
 		ld		(ModChannelData),hl
 		inc		b						; now loop over all the patterns and work out addresses/banks
 	
+
 		; work out size of channel
 		ld		a,(ModNumChan)
 		ld		e,a
@@ -287,7 +310,9 @@ CalcSeqStartAdd:
 		inc		ix
 		djnz	@AllChannels
 	
-
+		; keep a hold of the bank where the samples start
+		ld		a,c
+		ld		(ModTemp),a
 
 		; ----------------------------------------------------------------------------------------
 		; Now work out the start and bank of all SAMPLES
@@ -307,7 +332,7 @@ AllChannels2:
 		ld		(ix+(sample_offset+1)),h
 		ld		a,c
 		ld		(ix+sample_bank),c
-		ld		(ix+sample_rep_bank),c
+		;ld		(ix+sample_rep_bank),c
 
 		push	hl
 		push	bc
@@ -317,10 +342,10 @@ AllChannels2:
 		ld		d,(ix+(sample_rep_len+1))
 		ld		a,d
 		and		a
-		jr		nz,@LoopSample					; if repeat length >1, then we have a repeat 
+		jr		nz,CalcSampleLoop					; if repeat length >2, then we have a repeat 
 		ld		a,e
-		cp		2
-		jr		nc,@LoopSample
+		cp		3
+		jr		nc,CalcSampleLoop
 
 		; This is a non-looping sample
 		xor		a	
@@ -329,44 +354,75 @@ AllChannels2:
 		ld		(ix+sample_rep_bank),a
 		ld		(ix+sample_rep),a
 		ld		(ix+(sample_rep+1)),a
-		jr		@NoRepeat		
+		jr		SkipRepeatCalc	
 
-@LoopSample:
-		ld		e,(ix+sample_rep)
-		ld		d,(ix+(sample_rep+1))
-		add		hl,de							; add to base of sample
-		
-		; while we're here.... work out the END of the sample - which is the end repeat point
-		push	hl
-		ld		e,(ix+sample_rep_len)			; Add on sample length
-		ld		d,(ix+(sample_rep_len+1))
-		dec		de
-		add		hl,de							; add to base of sample
-		ld		(ix+sample_end),l
-		ld		(ix+(sample_end+1)),h
-		ld		a,(ix+sample_rep_bank)		
-		ld		(ix+sample_end_bank),a
-
-		pop		hl								; get the repeat point back
-		ld		a,h
-		and		$e0
-		swapnib
-		rrca							
-		add		a,c								; workout the repeat bank
+CalcSampleLoop:
+		ld		a,(ix+sample_bank)				; base bank
 		ld		(ix+sample_rep_bank),a
+
+		ld		e,(ix+sample_rep)				; start of loop point
+		ld		d,(ix+(sample_rep+1))
+		ld		a,(ix+(sample_rep+2))
+		add		hl,de							; add to base of sample
+		adc		a,0
+		
+		; work out bank offset of the repeat
+		srl		a								; get the number of banks the repeat starts at
+		ld		a,h
+		rra
+		and		$f0
+		swapnib
+		ld		e,a
+		ld		a,c
+		add		a,e
+		ld		(ix+sample_rep_bank),a			; store repeat bank
+
 		ld		a,h
 		and		$1f
 		ld		h,a
-		ld		(ix+sample_rep),l
-		ld		(ix+(sample_rep+1)),h	
+		ld		(ix+sample_rep),l				; start of loop point
+		ld		(ix+(sample_rep+1)),h
+
+
+		; Now work out the END address and bank
+		push	hl
+		ld		l,(ix+sample_rep_len)			; Add on sample length
+		ld		h,(ix+(sample_rep_len+1))
+		xor		a								; clear carry
+		ld		a,(ix+(sample_rep_len+2))
+		ld		de,1
+		sbc		hl,de							; subtract 1 from length
+		sbc		0
+		ex		de,hl							; length now in  ADE
+		pop		hl								; restore base address of sample
+		push	hl
+
+		
+		add		hl,de							; add to base of sample
+		;ld		(ix+sample_end),l
+		;ld		(ix+(sample_end+1)),h
+		adc		a,(ix+(sample_end+2))
+		srl		a								; get the number of banks the repeat starts at
+		ld		a,h
+		rra
+		and		$f0
+		swapnib
+		add		a,(ix+sample_rep_bank)
+		ld		(ix+sample_end_bank),a
+		ld		a,h
+		and		$1f
+		ld		h,a
+		ld		(ix+sample_end),l
+		ld		(ix+(sample_end+1)),h	
+
 
 
 		; Work out the address of the NEXT sample
-@NoRepeat
+SkipRepeatCalc
 		pop		bc
 		pop		hl
 
-		ld		e,(ix+sample_len)				; get sample length (we can only deal with sample lengths of 65534 and less)
+		ld		e,(ix+sample_len)		; get sample length (we can only deal with sample lengths of 65534 and less)
 		ld		d,(ix+(sample_len+1))
 		add		hl,de
 		ld		a,h

@@ -251,6 +251,7 @@ CopyInSample
 		call	NonRepeatingSampleCopy
 		jr		@SkipRepeat
 @RepeatingSample:
+		;call	NonRepeatingSampleCopy
 		call	RepeatingSampleCopy
 @SkipRepeat:
 		ld		a,h
@@ -361,7 +362,7 @@ SetupNote:
 		; Do we want to skip the sample setup? 
 		ex		af,af'
 		and		a
-		jr		nz,WorkOutSampleLengthDelta
+		jp		nz,WorkOutSampleLengthDelta
 		;
 		; Now we've read the note, find the base address and bank of the sample
 		;
@@ -417,6 +418,9 @@ SetupNote:
 		ld		(ix+note_sample_end),a
 		ld		a,(iy+(sample_end+1))
 		ld		(ix+(note_sample_end+1)),a
+		ld		a,(iy+sample_end_bank)
+		ld		(ix+note_sample_endb),a
+
 
 		ld		a,(iy+sample_vol)
 		ld		(ix+note_volume_sample),a

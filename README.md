@@ -4,7 +4,7 @@ Copyright 2020 Mike Dailly, All rights reserved.
 
 The source to this player may be used freely for both commercial and non-commercial reasons, without charge but copyright is maintained and credit must be given to anyone who has contributed (see below) in any project where it is used. No warranty is given to this project and you use it at your own risk.
 
-If you extend it, imrpove it, add new or missing features, please consider pushing back all changes for others to benefit from.
+If you extend it, improve it, add new or missing features, please consider pushing back all changes for others to benefit from.
 
 
 Contributors

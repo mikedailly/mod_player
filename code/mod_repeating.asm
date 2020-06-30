@@ -1,3 +1,8 @@
+;------------------------------------------------------------------
+;	On entry
+;		MMU 2,3 = Sample banked in
+;		DE		= base address of sample
+;------------------------------------------------------------------
 RepeatingSampleCopy:
 
 		;------------------------------------------------------------------
@@ -10,14 +15,27 @@ WorkOutLength2:
 		ld		b,a
 		exx
 
-
+		; work out how many banks appart the end address is
+		ld		a,(ix+note_sample_endb)
+		sub		(ix+note_sample_curb)
+		cp		2								; if >2 banks away, then put in a  large value we'll never hit
+		jr		nc,OutOfRange
+		swapnib									; get bank into high nibble.
+		add		a,a								; *2 then = *$20
+		add		a,Hi(MOD_ADD)
+		add		a,(ix+(note_sample_end+1))
+		ld		(EndAddHi+1),a
 		ld		a,(ix+note_sample_end)
 		ld		(EndAddLow+1),a
-		ld		a,(ix+(note_sample_end+1))
-		add		a,Hi(MOD_ADD)
+		jp		SkipOutOfRange
+OutOfRange:
+		ld		a,$80 ;(ix+note_sample_end)
+		ld		(EndAddLow+1),a
+		ld		a,$ff ;(ix+(note_sample_end+1))
 		ld		(EndAddHi+1),a
 		;ld		a,(ix+sample_rep_bank)		
 		;ld		(ix+sample_end_bank),h
+SkipOutOfRange:
 
 
 SampCopy2
