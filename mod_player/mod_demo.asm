@@ -1,6 +1,7 @@
 ;
-; MOD player
+; MOD player demo
 ; By Mike Dailly, (c) 2020 all rights reserved.
+; Please see the readme for license details
 ;
 
                 opt     Z80                                     ; Set Z80 mode

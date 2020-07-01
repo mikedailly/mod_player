@@ -6,3 +6,8 @@ code/mod_tmp.nex.map
 tools/mod_tool/mod_tool/bin/
 tools/mod_tool/mod_tool/obj/
 tools/mod_tool/.vs/mod_tool/v14/.suo
+mod_player/mod_player.sublime-project
+mod_player/mod_player.sublime-workspace
+mod_player/mod_player.nex
+mod_player/mod_tmp.nex
+mod_player/mod_tmp.nex.map
