@@ -30,14 +30,14 @@ Usage:
 	call	ModTick
 
 
-; These determain the playback speed. 
-; Please note, if changing these, you will need to rebuild the note conversion table (c# code)
-TVRate			equ	50						; framerate
-SamplesPerFrame	equ	128						; 104 samples per frame
+	; These determain the playback speed. 
+	; Please note, if changing these, you will need to rebuild the note conversion table (c# code)
+	TVRate			equ	50						; framerate
+	SamplesPerFrame	equ	128						; 104 samples per frame
 
-; The bank register and base address we're using (uses this one, and the next one)
-MOD_BANK		equ	$52						; which MMU bank to use (this one and the next)
-MOD_ADD			equ	$4000					; base address of this bank
+	; The bank register and base address we're using (uses this one, and the next one)
+	MOD_BANK		equ	$52						; which MMU bank to use (this one and the next)
+	MOD_ADD			equ	$4000					; base address of this bank
 
 
 
