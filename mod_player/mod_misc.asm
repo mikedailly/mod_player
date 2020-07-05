@@ -1,3 +1,5 @@
+; Mod player
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
 
 MOD_Z80_DMA_DATAGEAR_PORT			equ $6b
 

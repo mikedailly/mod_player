@@ -1,6 +1,6 @@
 ;
 ; MOD player demo
-; By Mike Dailly, (c) 2020 all rights reserved.
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
 ; Please see the readme for license details
 ;
 

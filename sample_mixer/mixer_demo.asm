@@ -1,6 +1,7 @@
 ;
-; MOD player demo
-; By Mike Dailly, (c) 2020 all rights reserved.
+; Sample Mixer demo
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
+;
 ; Please see the readme for license details
 ;
 
@@ -44,13 +45,13 @@ StartAddress:
 		call	Cls
 		ld		a,7
 		call	ClsATTR
-		call	MixerInit			; initialise the mod player - generate tables etc...
+		call	MixerInit			; initialise the mixer (takes a few frames)
 
-		ld		a,SampleBank
-		ld		de,0
-		ld		hl,SampleLEngth
-		ld		b,0
-		call	InitSample
+		ld		a,SampleBank		; bank of sample
+		ld		de,0				; bank offset
+		ld		hl,SampleLEngth		; sample length (low 2 bytes)
+		ld		b,0					; sample length high byte
+		call	InitSample			; initialise the sample (pre-scale etc)
 
 ; ----------------------------------------------------------------------------------------------------
 ;               Main loop
@@ -105,9 +106,9 @@ WaitVBlank:
 		NextReg	$52,10
 		NextReg	$53,11
 
-		ld		a,0
-		ld		de,$4001
-		call	PrintHex
+		;ld		a,0
+		;ld		de,$4001
+		;call	PrintHex
 
 
 ;		nextreg $4a,%11111111
@@ -121,17 +122,6 @@ WaitVBlank:
 
 		;NextReg	$52,10
 		;NextReg	$53,11
-
-		;call	DMAReadLen
-		;push	hl
-		;ld		a,h
-		;ld		a,(ModDMAValue)
-		;ld		de,$4004
-		;call	PrintHex
-		;pop		hl
-		;ld		a,l
-		;ld		de,$4006
-		;call	PrintHex
 
 		jp      MainLoop
 
@@ -152,7 +142,8 @@ Debounce			db		0
 
 		seg	SAMPLE_BANK
 SampleAddress:
-		incbin	"sample.raw"				; sample at 6400Hz
+		incbin	"sample_6400.raw"				; sample at 6400Hz
+;		incbin	"sample_3750.raw"				; sample at 6400Hz
 EndSampleAddress
 SampleLEngth	equ	EndSampleAddress-SampleAddress
 

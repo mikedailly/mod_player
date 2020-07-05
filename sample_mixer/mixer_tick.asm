@@ -1,3 +1,8 @@
+;
+; Sample Mixer for sound effect playback
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
+;
+
 ; ********************************************************************************************
 ; Process the mixer - process and actually play the current mod file.
 ; ********************************************************************************************

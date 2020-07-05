@@ -4,7 +4,7 @@ Copyright 2020 Mike Dailly, All rights reserved.
 
 The source to this player may be used freely for both commercial and non-commercial reasons, without charge but copyright is maintained and credit must be given to anyone who has contributed (see below) in any project where it is used. No warranty is given to this project and you use it at your own risk.
 
-If you extend it, improve it, add new or missing features, please consider pushing back all changes for others to benefit from.
+If you extend it, improve it, add new or missing features, please consider pushing back all changes for others to benefit from. Any accepted changes will be added to the contributors list.
 
 
 Contributors
@@ -36,7 +36,46 @@ TVRate			equ	50						; framerate
 SamplesPerFrame	equ	128						; 104 samples per frame
 
 ; The bank register and base address we're using (uses this one, and the next one)
-MOD_BANK		equ	$52				; which MMU bank to use (this one and the next)
-MOD_ADD			equ	$4000			; base address of this bank
+MOD_BANK		equ	$52						; which MMU bank to use (this one and the next)
+MOD_ADD			equ	$4000					; base address of this bank
+
+
+
+
+
+
+
+
+Sound Effect Mixer
+------------------
+This little project allows you to have 4 independent samples or any size running at the same time, while only taking up a few bytes of main memory.
+	
+Press "S" to play sound effectcs in the demo.
+
+Samples must be recorded/resampled to the same as the playback speed, and saved as 8bit signed.
+
+To Init:
+		call	MixerInit				; initialise the mod player - generate tables etc...
+
+
+Inside IRQ:
+		call	MixerProcess			; call the mixer
+
+
+To init a sample - call only once:
+		ld		a,SampleBank
+		ld		de,BankOffset
+		ld		hl,SampleLength
+		ld		b,SampleLength_HighByte
+		call	InitSample
+
+
+To play a sample:
+		ld		a,channel				; 0 to 3
+		ld		c,SampleBank			; the bank the 
+		ld		hl,0					; sample offset into the bank
+		ld		de,SampleLEngth			; the length of the samples in bytes
+		ld		b,SampleLength_HighByte	; sample length high
+		call	MixerPlaySample
 
 

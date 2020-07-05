@@ -1,3 +1,7 @@
+;
+; Sample Mixer for sound effect playback
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
+;
 
 MIXER_Z80_DMA_DATAGEAR_PORT			equ $6b
 

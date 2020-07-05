@@ -1,3 +1,6 @@
+; Mod player
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
+
 ;------------------------------------------------------------------
 ; This loop is used if the sample doesn't repeat, as it's quite a bit quicker than
 ; doing a looping sample

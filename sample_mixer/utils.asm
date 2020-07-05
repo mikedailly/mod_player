@@ -1,9 +1,15 @@
+;
+; Sample Mixer for sound effect playback
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
+;
+
 ; ************************************************************************
 ;
 ; 	Utils file - keep all utils variables in this file
 ;
 ; ************************************************************************
-		;bit 7 to lock io port 0x303B sprite number and nextreg sprite number together
+
+;bit 7 to lock io port 0x303B sprite number and nextreg sprite number together
 SPRITE_SELECT_REGISTER			equ $34
 SPRITE_X_VALUE_REGISTER			equ $35
 SPRITE_Y_VALUE_REGISTER			equ $36

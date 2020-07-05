@@ -1,3 +1,8 @@
+;
+; Sample Mixer for sound effect playback
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
+;
+
 ; ************************************************************************
 ;
 ;	General equates and macros

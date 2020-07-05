@@ -1,3 +1,6 @@
+; Mod player
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
+
 ; ********************************************************************************************
 ; TickMod - process and actually play the current mod file.
 ; ********************************************************************************************

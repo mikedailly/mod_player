@@ -1,6 +1,8 @@
 ;
 ; Sample Mixer for sound effect playback
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
 ;
+
 ; ********************************************************************************************
 ;	A  = root bank of MOD file (tune always starts at 0)
 ;   B  = InitSamples (0 = no)
@@ -94,20 +96,20 @@ MixerTryDMAAgain:
 		; now read how far we got...
 		call	MixerDMAReadLen		
 		
-		; debug
-		push	hl
-		push	hl
-		ld		a,h
-		ld		de,$4004
-		call	PrintHex
-		pop		hl
-		ld		a,l
-		ld		de,$4006
-		call	PrintHex
-		ld		a,(MixerDMAValue)
-		ld		de,$4001
-		call	PrintHex
-		pop		hl
+		; debug code
+		;push	hl
+		;push	hl
+		;ld		a,h
+		;ld		de,$4004
+		;call	PrintHex
+		;pop		hl
+		;ld		a,l
+		;ld		de,$4006
+		;call	PrintHex
+		;ld		a,(MixerDMAValue)
+		;ld		de,$4001
+		;call	PrintHex
+		;pop		hl
 
 
 		; now check to see if we transferred all the data

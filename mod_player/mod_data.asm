@@ -1,3 +1,6 @@
+; Mod player
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
+
 ; mod file data
 
 MOD_BANK		equ	$52				; which 2xMMU banks to use (this one and the next)

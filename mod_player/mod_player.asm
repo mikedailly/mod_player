@@ -1,5 +1,6 @@
 ;
-; Mod_player
+; Mod player
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
 ;
 ; ********************************************************************************************
 ;	A  = root bank of MOD file (tune always starts at 0)

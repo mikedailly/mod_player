@@ -1,3 +1,8 @@
+;
+; Sample Mixer for sound effect playback
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
+;
+
 ; mixer file data
 
 MIXER_BANK				equ	$52						; which 2xMMU banks to use (this one and the next)
@@ -7,11 +12,15 @@ MIXER_VOL_ADD			equ	$0000					; base of volume banks
 MIXER_SAMPLE_BANK		equ	$32						; base bank for recording
 MIXER_BASE_ADDRESS		equ	$4000					; base bank for recording
 
+MixerNumChannels		equ	4						; number of mixer channels
+
 MixerDMABaseFreq		equ	875000					; DMA base freq
 MixerTVRate				equ	50						; framerate
-MixerSamplesPerFrame	equ	128						; 128 samples per frame  (71 the LOWEST value possible - timings change onm HDMI/VGA etc)
+
+; (71 the LOWEST value possible - timings change onm HDMI/VGA etc)
+MixerSamplesPerFrame	equ	128						; 128 samples per frame  (6400 Hz)
+;MixerSamplesPerFrame	equ	75						; 75 samples per frame   (3750 Hz)
 MixerPlaybackFreq		equ	MixerSamplesPerFrame*MixerTVRate	; freq 128*50 = 6400Hz
-MixerNumChannels		equ	4						; number of mixer channels
 
 
 						rsreset

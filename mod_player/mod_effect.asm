@@ -1,3 +1,6 @@
+; Mod player
+; By Mike Dailly, (c) Copyright 2020 all rights reserved.
+
 ; *********************************************************************************************
 ; 
 ;	Handle all "effect" setup - or deal with them directly
