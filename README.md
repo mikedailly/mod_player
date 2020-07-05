@@ -59,10 +59,12 @@ To Init:
 
 
 Inside IRQ:
+
 		call	MixerProcess			; call the mixer
 
 
 To init a sample - call only once:
+
 		ld		a,SampleBank			; bank of sample
 		ld		de,0					; bank offset
 		ld		hl,SampleLength&$ffff	; sample length (low 2 bytes)
@@ -72,6 +74,7 @@ To init a sample - call only once:
 
 
 To play a sample:
+
 		ld		a,channel				; 0 to 3
 		ld		c,SampleBank			; the bank the 
 		ld		hl,0					; sample offset into the bank
