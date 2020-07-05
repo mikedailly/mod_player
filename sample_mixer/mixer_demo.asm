@@ -47,11 +47,11 @@ StartAddress:
 		call	ClsATTR
 		call	MixerInit			; initialise the mixer (takes a few frames)
 
-		ld		a,SampleBank		; bank of sample
-		ld		de,0				; bank offset
-		ld		hl,SampleLEngth		; sample length (low 2 bytes)
-		ld		b,0					; sample length high byte
-		call	InitSample			; initialise the sample (pre-scale etc)
+		ld		a,SampleBank			; bank of sample
+		ld		de,0					; bank offset
+		ld		hl,SampleLength&$ffff	; sample length (low 2 bytes)
+		ld		b,SampleLength>>16		; sample length high byte
+		call	InitSample				; initialise the sample (pre-scale etc)
 
 ; ----------------------------------------------------------------------------------------------------
 ;               Main loop
@@ -94,8 +94,8 @@ WaitVBlank:
 		ld		(ChannelToUse),a
 		ld		c,SampleBank			; the bank the 
 		ld		hl,0					; sample offset into the bank
-		ld		de,SampleLEngth			; the length of the samples in bytes
-		ld		b,0						; sample length high
+		ld		de,SampleLength&$ffff	; sample length (low 2 bytes)
+		ld		b,SampleLength>>16		; sample length high byte
 		call	MixerPlaySample
 		jr		@SkipDebounce
 @SkipPlay:
@@ -142,10 +142,11 @@ Debounce			db		0
 
 		seg	SAMPLE_BANK
 SampleAddress:
+;		incbin	"sample_12750.raw"				; sample at 6400Hz
 		incbin	"sample_6400.raw"				; sample at 6400Hz
 ;		incbin	"sample_3750.raw"				; sample at 6400Hz
 EndSampleAddress
-SampleLEngth	equ	EndSampleAddress-SampleAddress
+SampleLength	equ	EndSampleAddress-SampleAddress
 
 ; *****************************************************************************************************************************
 ; save

@@ -63,19 +63,19 @@ Inside IRQ:
 
 
 To init a sample - call only once:
-		ld		a,SampleBank
-		ld		de,BankOffset
-		ld		hl,SampleLength
-		ld		b,SampleLength_HighByte
-		call	InitSample
+		ld		a,SampleBank			; bank of sample
+		ld		de,0					; bank offset
+		ld		hl,SampleLength&$ffff	; sample length (low 2 bytes)
+		ld		b,SampleLength>>16		; sample length high byte
+		call	InitSample				; initialise the sample (pre-scale etc)
+
 
 
 To play a sample:
 		ld		a,channel				; 0 to 3
 		ld		c,SampleBank			; the bank the 
 		ld		hl,0					; sample offset into the bank
-		ld		de,SampleLEngth			; the length of the samples in bytes
-		ld		b,SampleLength_HighByte	; sample length high
+		ld		de,SampleLength&$ffff	; sample length (low 2 bytes)
+		ld		b,SampleLength>>16		; sample length high byte
 		call	MixerPlaySample
-
 

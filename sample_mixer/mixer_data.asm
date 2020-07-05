@@ -18,6 +18,8 @@ MixerDMABaseFreq		equ	875000					; DMA base freq
 MixerTVRate				equ	50						; framerate
 
 ; (71 the LOWEST value possible - timings change onm HDMI/VGA etc)
+; 3 demo values. Use one, then change which sample you include in mixer_demo.asm at the bottom.
+;MixerSamplesPerFrame	equ	255						; 255 samples per frame  (12750 Hz)
 MixerSamplesPerFrame	equ	128						; 128 samples per frame  (6400 Hz)
 ;MixerSamplesPerFrame	equ	75						; 75 samples per frame   (3750 Hz)
 MixerPlaybackFreq		equ	MixerSamplesPerFrame*MixerTVRate	; freq 128*50 = 6400Hz
