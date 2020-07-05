@@ -11,3 +11,10 @@ mod_player/mod_player.sublime-workspace
 mod_player/mod_player.nex
 mod_player/mod_tmp.nex
 mod_player/mod_tmp.nex.map
+sample_mixer/mixer_demo.nex
+sample_mixer/mixer_player.sublime-project
+sample_mixer/mixer_player.sublime-workspace
+sample_mixer/mixer_tmp.nex
+sample_mixer/mixer_tmp.nex.map
+sample_mixer/mod_player.sublime-project
+sample_mixer/mod_player.sublime-workspace
