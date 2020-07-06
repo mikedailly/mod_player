@@ -36,6 +36,7 @@ ModTick:
 		NextReg	MOD_BANK+1,a
 
 
+
 		ld		ix,ModChanData
 		ld		a,(ModNumChan)
 		ld		b,a

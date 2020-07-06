@@ -42,7 +42,7 @@ EffectJump:
 		dw	NoEffect				; 10 Volume Slide
 		dw	NoEffect				; 11 Position Jump
 		dw	SetVolume				; 12 Set volume
-		dw	NoEffect				; 13 Pattern break
+		dw	PatternBreak			; 13 Pattern break
 		dw	NoEffect				; 14 multi-effect
 		dw	SetModSpeed				; 15 Set Speed
 
@@ -51,7 +51,7 @@ Effect14Jump:
 
 
 ;------------------------------------------------------------------------------------------
-; Setup a positive Pitch bend delta (up)
+; $01 - Setup a positive Pitch bend delta (up)
 ;------------------------------------------------------------------------------------------
 PitchBendUp:
 		ld		(ix+note_pitch_bend),e
@@ -60,7 +60,7 @@ PitchBendUp:
 		jp		NoEffect
 
 ;------------------------------------------------------------------------------------------
-; Setup a negative Pitch bend delta  (down)
+; $02 - Setup a negative Pitch bend delta  (down)
 ;------------------------------------------------------------------------------------------
 PitchBendDown:
 		ld		d,0
@@ -72,7 +72,7 @@ PitchBendDown:
 
 
 ;------------------------------------------------------------------------------------------
-; Set channel volume - we can only handle 0-63
+; $0c - Set channel volume - we can only handle 0-63
 ;------------------------------------------------------------------------------------------
 SetVolume:
 		ld		a,e
@@ -85,8 +85,47 @@ SetVolume:
 		jp		NoEffect
 
 
+
 ;------------------------------------------------------------------------------------------
-; Set the mod playback speed
+; $0d - Break to Next Pattern 
+;  Where [13][x][y] means "stop the pattern after this division, and
+; continue the song at the next pattern at division x*10+y" 
+; (the 10 is not a typo). Legal divisions are from 0 to 63.
+;------------------------------------------------------------------------------------------
+PatternBreak:
+		ld 		a,$3f
+		ld		(ModSequenceIndex),a
+
+		; setup sequence JUMP....
+		ld		a,e
+		swapnib
+		and		$f
+		ld		d,a
+		ld		a,e
+		and		$f
+		ld		e,10
+		mul
+		add		de,a
+		; de hold the sequence number (0-63)
+		ld		a,(ModNumChan)				; seqNum*chan (1-8)
+		ld		d,a
+		mul
+		ex		de,hl
+		add		hl,hl						; *2
+		add		hl,hl						; *4 (4 bytes per note)
+		ex		de,hl
+
+		ld		a,e
+		ld		(ModSequanceOffset),a		; reset offset
+		ld		a,d
+		ld		(ModSequanceOffset+1),a		; reset offset
+
+		jp		NoEffect
+
+
+
+;------------------------------------------------------------------------------------------
+; $0f - Set the mod playback speed
 ;------------------------------------------------------------------------------------------
 SetModSpeed:
 		ld		a,e

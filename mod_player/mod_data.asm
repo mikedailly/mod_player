@@ -104,6 +104,7 @@ ModSongLength				db	0			; the length of the mod (in sequences)
 ModSongRestart				db	0			; restart point (in sequences)
 ModSequanceOrder			dw	0			; the sequence order
 ModSequanceOrder_current	dw	0			; current pointer to the sequence order
+ModSequanceOffset			dw	0			; the value to offset the NEXT sequence (usually 0)
 ModNumInst					db	0			; number of instruments (15 or 31)
 ModNumChan					db	0			; number of channels 1-8
 ModHighestPattern			db	0			; largest pattern number

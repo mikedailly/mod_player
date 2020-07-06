@@ -586,6 +586,9 @@ ModPlay:
 		; reset sequence to the start
 		xor		a
 		ld		(ModPatternIndex),a			; reset to start of pattern
+		ld		(ModSequanceOffset),a		; reset the sequence offset value
+		ld		(ModSequanceOffset+1),a
+
 		ld		hl,ModPattern
 		add		hl,a
 		ld		(ModSequanceOrder_Current),hl
@@ -644,11 +647,20 @@ SetUpSequence:
 		ld		d,(hl)
 		inc		hl
 		ld		a,(hl)
-		add		de,MOD_ADD					; base of "banks"
-		ld		(ModPatternAddress),de
 		ld		(ModPatternBank),a
 
+		
+		; move to special offset - or 0...
+		push	hl
+		ld		hl,(ModSequanceOffset)		; reset the sequence offset value
+		add		de,MOD_ADD					; base of "banks"
+		add		hl,de						; jump to new offset IN sequence
+		ld		(ModPatternAddress),hl
+		pop		hl
+
 		xor		a
+		ld		(ModSequanceOffset),a		; reset offset
+		ld		(ModSequanceOffset+1),a		; reset offset
 		ld		(ModSequenceIndex),a
 		ret
 
