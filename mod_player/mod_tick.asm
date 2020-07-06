@@ -93,7 +93,7 @@ ReadAllChannelNotes:
 		
 		inc		hl
 		ld		a,(hl)
-		ld		(ix+note_effect),a			; effect high
+		ld		(ix+note_effect),a			; effect param
 		inc		hl							; next note	
 		push	hl
 
@@ -111,9 +111,14 @@ GetNote
 		or		d
 		jp		z,NextNote
 
+		ld		a,(ix+(note_effect+1))		; effect high
+		cp		$c
+		jr		z,@DontResetVolume
+
 		ld		a,$40
 		ld		(ix+note_volume_channel),a	; reset note volume
 
+@DontResetVolume:
 		xor		a
 		call	SetupNote
 		jp		SkipEffects
