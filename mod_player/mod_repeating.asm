@@ -117,6 +117,7 @@ EndAddHi:
 		sbc		hl,de				; subtract the end address from the current sample addredss
 		ex		de,hl				; to get number of bytes PAST the end of the sample.
 
+		; DE now hold the number of bytes PAST the end of the sample....
 		ld		l,(ix+note_sample_rep)			; get repeat point
 		ld		a,(ix+(note_sample_rep+1))
 		add		a,Hi(MOD_ADD)
@@ -127,7 +128,8 @@ EndAddHi:
 		NextReg	MOD_BANK,a					; bank over the ROM area
 		inc		a
 		NextReg	MOD_BANK+1,a
-
+		
+		call	SetupRepeatCheck
 
 		pop		de
 @NoRepeat:
@@ -144,4 +146,29 @@ EndAddHi:
 		ret		z
 		ld		hl,0						; check for repeating samples here.....
 		ret
+
+
+
+SetupRepeatCheck:
+		; work out how many banks appart the end address is
+		ld		a,(ix+note_sample_endb)
+		sub		(ix+note_sample_curb)
+		cp		2								; if >2 banks away, then put in a  large value we'll never hit
+		jr		nc,OutOfRange2
+		swapnib									; get bank into high nibble.
+		add		a,a								; *2 then = *$20
+		add		a,Hi(MOD_ADD)
+		add		a,(ix+(note_sample_end+1))
+		ld		(EndAddHi+1),a
+		ld		a,(ix+note_sample_end)
+		ld		(EndAddLow+1),a
+		ret
+OutOfRange2:
+		ld		a,$80 ;(ix+note_sample_end)
+		ld		(EndAddLow+1),a
+		ld		a,$ff ;(ix+(note_sample_end+1))
+		ld		(EndAddHi+1),a
+		ret
+
+
 
