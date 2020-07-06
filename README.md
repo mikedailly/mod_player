@@ -14,7 +14,8 @@ Mike Dailly
 
 Please be aware, if you are looking for a "Pure" Z80 Mod player, this version makes use of ZX Spectrum Next features, such as banking and extended Z80 instructions.
 
-
+Note, the Axel F tune is here for demo purposes only and is not included in the "open source" licnese.
+If anyone knows who created this, please get in touch with their details.
 
 
 
