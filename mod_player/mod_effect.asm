@@ -40,7 +40,7 @@ EffectJump:
 		dw	NoEffect				; 08 Set panning position (unused by most trackers - we don't use it either)
 		dw	NoEffect				; 09 Set sample offset
 		dw	NoEffect				; 10 Volume Slide
-		dw	NoEffect				; 11 Position Jump
+		dw	PositionJump			; 11 Position Jump
 		dw	SetVolume				; 12 Set volume
 		dw	PatternBreak			; 13 Pattern break
 		dw	NoEffect				; 14 multi-effect
@@ -52,6 +52,13 @@ Effect14Jump:
 
 ;------------------------------------------------------------------------------------------
 ; $01 - Setup a positive Pitch bend delta (up)
+;       Where [1][x][y] means "smoothly decrease the period of current
+;       sample by x*16+y after each tick in the division". The
+;       ticks/division are set with the 'set speed' effect (see below). If
+;       the period of the note being played is z, then the final period
+;       will be z - (x*16 + y)*(ticks - 1). As the slide rate depends on
+;       the speed, changing the speed will change the slide. You cannot
+;       slide beyond the note B3 (period 113).
 ;------------------------------------------------------------------------------------------
 PitchBendUp:
 		ld		(ix+note_pitch_bend),e
@@ -61,6 +68,9 @@ PitchBendUp:
 
 ;------------------------------------------------------------------------------------------
 ; $02 - Setup a negative Pitch bend delta  (down)
+;       Where [2][x][y] means "smoothly increase the period of current
+;       sample by x*16+y after each tick in the division". Similar to [1],
+;       but lowers the pitch. You cannot slide beyond the note C1 (period 856).
 ;------------------------------------------------------------------------------------------
 PitchBendDown:
 		ld		d,0
@@ -70,6 +80,21 @@ PitchBendDown:
 		ld		(ix+(note_pitch_bend+1)),e
 		jp		NoEffect
 
+
+;------------------------------------------------------------------------------------------
+; $0B - Position jump
+;       Where [11][x][y] means "stop the pattern after this division, and
+;       continue the song at song-position x*16+y". This shifts the
+;      'pattern-cursor' in the pattern table (see above). Legal values for
+;       x*16+y are from 0 to 127.
+;------------------------------------------------------------------------------------------
+PositionJump:
+		ld 		a,$3f
+		ld		(ModSequenceIndex),a
+		ld		a,e
+		or		$80						; flag as don't inc pattern, use new one...
+		ld		(ModPatternIndex),a
+		jp		NoEffect
 
 ;------------------------------------------------------------------------------------------
 ; $0c - Set channel volume - we can only handle 0-63

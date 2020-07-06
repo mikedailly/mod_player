@@ -170,11 +170,19 @@ SkipEffects:
 		cp		64
 		jr		nz,DoSamples
 
+
 		; end of sequence.... move to next pattern
 		ld		a,(ModSongLength)
 		ld		l,a
 		ld		a,(ModPatternIndex)
+		
+		; check for position jump effect in use
+		bit		7,a
+		jr		nz,@PositionJumpEffect
 		inc		a
+@PositionJumpEffect:
+		and		$7f
+
 		cp		l
 		jr		nz,@NotEnd
 		xor		a							; restart MOD
