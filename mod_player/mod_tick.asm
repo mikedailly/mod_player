@@ -84,9 +84,11 @@ ReadAllChannelNotes:
 		swapnib
 		and		$f
 		or		e							; merge with sample high
+		and		a
+		jr		z,@NoSample
 		dec		a							; -1 (values from 1 to 128)
 		ld		(ix+note_sample),a
-
+@NoSample:
 		ld		a,c
 		and		$f
 		ld		(ix+(note_effect+1)),a		; effect high
